@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wall -g CMakeFiles/sender.dir/src/main.cc.o -o sender  -lzmq 
