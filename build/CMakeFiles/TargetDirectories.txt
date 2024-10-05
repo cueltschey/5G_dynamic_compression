@@ -1,8 +1,0 @@
-/home/ntia/5G_dynamic_compression/build/CMakeFiles/edit_cache.dir
-/home/ntia/5G_dynamic_compression/build/CMakeFiles/rebuild_cache.dir
-/home/ntia/5G_dynamic_compression/build/receiver/CMakeFiles/receiver.dir
-/home/ntia/5G_dynamic_compression/build/receiver/CMakeFiles/edit_cache.dir
-/home/ntia/5G_dynamic_compression/build/receiver/CMakeFiles/rebuild_cache.dir
-/home/ntia/5G_dynamic_compression/build/sender/CMakeFiles/sender.dir
-/home/ntia/5G_dynamic_compression/build/sender/CMakeFiles/edit_cache.dir
-/home/ntia/5G_dynamic_compression/build/sender/CMakeFiles/rebuild_cache.dir

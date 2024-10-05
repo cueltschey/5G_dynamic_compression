@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wall -g CMakeFiles/receiver.dir/src/main.cc.o -o receiver  -lzmq 
