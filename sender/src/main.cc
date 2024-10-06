@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include "ZmqSender.h"
+#include "UhdSender.h"
 
 int main() {
     // Create a ZMQ sender and bind it to the required address
@@ -42,3 +43,27 @@ int main() {
 
     return 0;
 }
+
+/*
+#include "UHDSender.hpp"
+#include <complex>
+#include <vector>
+#include <iostream>
+
+int main() {
+    // Create a UHDSender object with a specific device (for example, a local device)
+    UHDSender uhdSender("type=x300");
+
+    // Prepare a buffer of samples (sine wave example)
+    std::vector<std::complex<float>> samples(1000);
+    for (size_t i = 0; i < samples.size(); i++) {
+        float phase = 2.0f * M_PI * i / samples.size();
+        samples[i] = std::complex<float>(std::cos(phase), std::sin(phase));
+    }
+
+    // Send the samples to the USRP device
+    uhdSender.sendSamples(samples);
+
+    return 0;
+}
+*/

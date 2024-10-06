@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 project(5G_dynamic_compression)
 
 find_package(OpenCV REQUIRED)
+find_package(UHD REQUIRED)
+
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
