@@ -1,28 +1,44 @@
-#include <zmq.hpp>
-#include <iostream>
-#include <string>
+#include <opencv2/opencv.hpp>
 #include <thread>
 #include <chrono>
+#include "ZmqSender.h"
 
 int main() {
-    zmq::context_t context(1);
-    
-    zmq::socket_t socket(context, ZMQ_PUB);
-    
-    socket.bind("tcp://*:5555");
-    
-    while (true) {
-        std::string message = "Hello, ZMQ!";
-        
-        zmq::message_t msg(message.data(), message.size());
-        
-        socket.send(msg, zmq::send_flags::none);
-        
-        std::cout << "Sent: " << message << std::endl;
+    // Create a ZMQ sender and bind it to the required address
+    ZMQSender zmqSender("tcp://*:5555");
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    // Open the video file using OpenCV
+    std::string videoPath = "/home/ntia/test.mp4";
+    cv::VideoCapture cap(videoPath);
+
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open video file!" << std::endl;
+        return -1;
     }
-    
+
+    // Get the frame rate of the video
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    int delay = static_cast<int>(1000 / fps);
+
+    while (true) {
+        cv::Mat frame;
+        cap >> frame;  // Read a new frame from the video file
+
+        if (frame.empty()) {
+            std::cout << "End of video stream" << std::endl;
+            break;  // Exit the loop when the video ends
+        }
+
+        // Convert the frame to a byte array (serialize it)
+        std::vector<uchar> buffer;
+        cv::imencode(".jpg", frame, buffer);  // Encode as JPEG to reduce size
+
+        // Send the frame buffer using the ZMQSender class
+        zmqSender.sendFrame(buffer);
+
+        // Maintain the original video frame rate
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+    }
+
     return 0;
 }
-

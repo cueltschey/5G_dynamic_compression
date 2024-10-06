@@ -1,11 +1,12 @@
-# CMakeLists.txt for the sender
 cmake_minimum_required(VERSION 3.10)
 project(Sender)
 
 set(CMAKE_CXX_FLAGS "-Wall -g")
 
-# Create the sender executable
+set(SOURCES src/*.cc ../lib/src/*.cc)
+include_directories(hdr ../lib/hdr)
+
 add_executable(sender src/main.cc)
 
-# Link the ZeroMQ library
-target_link_libraries(sender PRIVATE zmq)
+target_link_libraries(sender PRIVATE zmq ${OpenCV_LIBS})
+
