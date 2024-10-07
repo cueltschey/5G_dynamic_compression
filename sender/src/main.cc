@@ -3,10 +3,12 @@
 #include <chrono>
 #include "ZmqChannel.h"
 #include "Compression.h"
+#include "Iq.h"
 
 int main() {
     ZmqChannel zmqSender("tcp://*:5555", true);
     Compression compressor;
+    IqConverter iqConv;
 
     std::string videoPath = "/home/ntia/test.mp4";
     cv::VideoCapture cap(videoPath);
@@ -30,7 +32,7 @@ int main() {
         std::vector<uint8_t> buffer;
         cv::imencode(".jpg", frame, buffer);
 
-        std::vector<uint8_t> compressedBuffer = compressor.bfpCompress(buffer);
+        std::vector<cbf16_t> iqSamples = iqConv.toIq(buffer);
 
         std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
 

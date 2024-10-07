@@ -1,18 +1,15 @@
 #include <complex>
+#include <iostream>
+#include <vector>
+#include <cstring>
 
-struct cbf16_t {
-  bf16_t real;
-  bf16_t imag;
+struct bf16_t {
+    uint16_t value;
 
-  cbf16_t(float real_ = 0.0F, float imag_ = 0.0F) : real(to_bf16(real_)), imag(to_bf16(imag_)) {}
-
-  cbf16_t(cf_t value) : cbf16_t(value.real(), value.imag()) {}
-
-  cbf16_t(std::complex<double> value) : real(to_bf16(value.real())), imag(to_bf16(value.imag())) {}
-
-  bool operator==(cbf16_t other) const { return (real == other.real) && (imag == other.imag); }
-
-  bool operator!=(cbf16_t other) const { return !(*this == other); }
+    bf16_t(uint16_t v) : value(v) {}
+    
+    // Overload the comparison operator
+    bool operator==(const bf16_t& other) const { return value == other.value; }
 };
 
 inline bf16_t to_bf16(float value)
@@ -24,11 +21,26 @@ inline bf16_t to_bf16(float value)
 
   uint16_t temp_u16 = temp_u32 >> 16;
   return bf16_t(temp_u16);
-}
+};
+
+struct cbf16_t {
+  bf16_t real;
+  bf16_t imag;
+
+  cbf16_t(float real_ = 0.0F, float imag_ = 0.0F) : real(to_bf16(real_)), imag(to_bf16(imag_)) {}
+
+  cbf16_t(std::complex<double> value) : real(to_bf16(value.real())), imag(to_bf16(value.imag())) {}
+
+  bool operator==(cbf16_t other) const { return (real == other.real) && (imag == other.imag); }
+
+  bool operator!=(cbf16_t other) const { return !(*this == other); }
+};
+
 
 class IqConverter {
 public:
-  IqConverter();
+  IqConverter(){};
+  std::vector<cbf16_t> toIq(const std::vector<uint8_t>& data);
 private:
 };
 
