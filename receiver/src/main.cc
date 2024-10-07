@@ -2,24 +2,18 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>  // OpenCV for displaying video
 #include <vector>
+#include "ZmqChannel.h"
+#include "Compression.h"
 
 int main() {
-    // Initialize ZeroMQ context and subscriber socket
-    zmq::context_t context(1);
-    zmq::socket_t socket(context, ZMQ_SUB);
-    socket.connect("tcp://localhost:5555");  // Connect to the publisher's address
-    socket.set(zmq::sockopt::subscribe, ""); // Subscribe to all messages
+    ZmqChannel zmqReciever("tcp://localhost:5555", false);
+    Compression decompressor;
 
     while (true) {
-        // Receive a message from the socket
-        zmq::message_t msg;
-        socket.recv(msg, zmq::recv_flags::none);
+        std::vector<uint8_t> buffer = zmqReciever.recv();
 
-        // Convert the received message (byte array) into a vector of unsigned chars
-        std::vector<uchar> buffer(msg.size());
-        std::memcpy(buffer.data(), msg.data(), msg.size());
+        std::vector<uint8_t> decompressedBuffer = decompressor.bfpDecompress(buffer);
 
-        // Decode the JPEG image back into an OpenCV Mat object
         cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
 
         if (frame.empty()) {

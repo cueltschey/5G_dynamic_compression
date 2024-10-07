@@ -5,7 +5,7 @@ find_package(OpenCV REQUIRED)
 find_package(UHD REQUIRED)
 
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(ZMQ_LIB_PATH "/usr/lib/x86_64-linux-gnu")
@@ -16,3 +16,5 @@ include_directories(${ZMQ_INCLUDE_DIR})
 
 add_subdirectory(receiver)
 add_subdirectory(sender)
+
+add_subdirectory(lib)
