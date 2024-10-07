@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <cstdint>
 
 struct bf16_t {
     uint16_t value;

@@ -20,3 +20,18 @@ input state:
 - frequency
 - distance between radios?
 
+
+## Building
+
+install deps:
+```bash
+sudo apt install -y libopencv-dev libuhd-dev uhd-host libzmq-dev
+```
+
+build:
+```bash
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+```
