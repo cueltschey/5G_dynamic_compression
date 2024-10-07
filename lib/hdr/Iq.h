@@ -41,6 +41,8 @@ class IqConverter {
 public:
   IqConverter(){};
   std::vector<cbf16_t> toIq(const std::vector<uint8_t>& data);
-private:
+  std::vector<uint8_t> fromIq(const std::vector<cbf16_t>& iqSamples);
+  std::vector<uint8_t> serializeIq(const std::vector<cbf16_t>& iqSamples);
+  std::vector<cbf16_t> deserializeIq(const std::vector<uint8_t>& serializedData);
 };
 

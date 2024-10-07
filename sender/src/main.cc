@@ -29,12 +29,16 @@ int main() {
             break;  // Exit the loop when the video ends
         }
 
+        // Get the data as a byte buffer
         std::vector<uint8_t> buffer;
         cv::imencode(".jpg", frame, buffer);
 
+        // Convert to IQ
         std::vector<cbf16_t> iqSamples = iqConv.toIq(buffer);
+        // serialize IQ samples
+        std::vector<uint8_t> iqBuffer = iqConv.serializeIq(iqSamples);
 
-        std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
+        std::cout << "Send frame of size: " << zmqSender.send(iqBuffer) << std::endl;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
     }

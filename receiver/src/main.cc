@@ -4,17 +4,22 @@
 #include <vector>
 #include "ZmqChannel.h"
 #include "Compression.h"
+#include "Iq.h"
 
 int main() {
     ZmqChannel zmqReciever("tcp://localhost:5555", false);
     Compression decompressor;
+    IqConverter iqConv;
 
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
 
-        std::vector<uint8_t> decompressedBuffer = decompressor.bfpDecompress(buffer);
+        std::vector<cbf16_t> iqSamples = iqConv.deserializeIq(buffer);
+        std::vector<uint8_t> frameBuffer = iqConv.fromIq(iqSamples);
 
-        cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
+        //std::vector<uint8_t> decompressedBuffer = decompressor.bfpDecompress(buffer);
+
+        cv::Mat frame = cv::imdecode(frameBuffer, cv::IMREAD_COLOR);
 
         if (frame.empty()) {
             std::cerr << "Error: Received an empty frame!" << std::endl;
