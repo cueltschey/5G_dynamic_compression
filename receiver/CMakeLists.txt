@@ -3,9 +3,10 @@ project(Receiver)
 
 set(CMAKE_CXX_FLAGS "-Wall -g")
 
-file(GLOB SOURCES src/*.cc)
+set(SOURCES src/*.cc ../lib/src/*.cc)
+include_directories(hdr ../lib/hdr)
 
-include_directories(hdr)
-add_executable(receiver ${SOURCES})
 
-target_link_libraries(receiver PRIVATE ChannelLib)
+add_executable(receiver src/main.cc)
+
+target_link_libraries(receiver PRIVATE zmq ${OpenCV_LIBS})
