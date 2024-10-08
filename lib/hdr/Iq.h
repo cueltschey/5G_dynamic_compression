@@ -1,3 +1,6 @@
+#ifndef IQ_H
+#define IQ_H
+
 #include <complex>
 #include <iostream>
 #include <vector>
@@ -47,3 +50,4 @@ public:
   std::vector<cbf16_t> deserializeIq(const std::vector<uint8_t>& serializedData);
 };
 
+#endif // !IQ_H

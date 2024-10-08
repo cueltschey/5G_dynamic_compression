@@ -1,52 +1,71 @@
 #include "Compression.h"
+#include "Iq.h"
 #include <vector>
 #include <cstdint>
 #include <algorithm>
 #include <iostream>
 #include <cmath>
 #include <cstdint>
+#include <cmath>
 
-std::vector<uint8_t> Compression::bfpCompress(const std::vector<uint8_t>& inputData) {
-    if (inputData.empty()) {
+std::vector<uint8_t> Compression::bfpCompress(const std::vector<cbf16_t>& iqSamples) {
+    if (iqSamples.empty()) {
+        std::cerr << "Input compression array is empty" << std::endl;
         return {};
     }
 
-    auto maxIt = std::max_element(inputData.begin(), inputData.end());
-    uint8_t maxVal = *maxIt;
+   auto max_real_it = std::max_element(iqSamples.begin(), iqSamples.end(),
+        [](const cbf16_t& a, const cbf16_t& b) {
+            return a.real.value < b.real.value;
+        })->real;
+
+    auto max_imag_it = std::max_element(iqSamples.begin(), iqSamples.end(),
+        [](const cbf16_t& a, const cbf16_t& b) {
+            return a.imag.value < b.imag.value;
+        })->imag;
+
+
+    uint16_t maxReal = static_cast<uint16_t>(max_real_it.value);
+    uint16_t maxImag = static_cast<uint16_t>(max_imag_it.value);
 
     uint8_t scaleFactor = 0;
-    if (maxVal > 0) {
-        scaleFactor = static_cast<uint8_t>(std::ceil(std::log2(maxVal)));
+    if (maxReal > 0) {
+        scaleFactor = static_cast<uint8_t>(std::floor(std::log2(maxReal)));
+        std::cout << std::to_string(scaleFactor) << std::endl;
     }
 
     std::vector<uint8_t> output;
-    output.reserve(inputData.size() + 1);
+    output.reserve(iqSamples.size() + 1);
     output.push_back(scaleFactor);
 
-    for (uint8_t value : inputData) {
-        uint8_t scaledValue = static_cast<uint8_t>(std::round(value / static_cast<float>(1 << scaleFactor)));
-        output.push_back(scaledValue);
-    }
+    for (const auto& sample : iqSamples) {
+        uint8_t scaled_real = static_cast<uint8_t>(std::round(static_cast<float>(sample.real.value) / (1 << scaleFactor)));
+        uint8_t scaled_imag = static_cast<uint8_t>(std::round(static_cast<float>(sample.imag.value) / (1 << scaleFactor)));
 
-    std::cout << "Input size: " << inputData.size() << " Output: " << output.size() << std::endl;
+        output.push_back(scaled_real);
+        output.push_back(scaled_imag);
+    }
 
     return output;
 }
 
-std::vector<uint8_t> Compression::bfpDecompress(const std::vector<uint8_t>& compressedData) {
+std::vector<cbf16_t> Compression::bfpDecompress(const std::vector<uint8_t>& compressedData) {
     if (compressedData.empty()) {
         return {};
     }
 
     uint8_t scaleFactor = compressedData[0];
 
-    std::vector<uint8_t> output;
+    std::vector<cbf16_t> output;
     output.reserve(compressedData.size() - 1);
 
-    for (size_t i = 1; i < compressedData.size(); ++i) {
-        uint8_t scaledValue = compressedData[i];
-        uint8_t originalValue = static_cast<uint8_t>(scaledValue * (1 << scaleFactor));
-        output.push_back(originalValue);
+    for (size_t i = 1; i < compressedData.size(); i += 2) {
+        bf16_t I(static_cast<uint16_t>(compressedData[i]) * (1 >> scaleFactor));
+        bf16_t Q(static_cast<uint16_t>(compressedData[i + 1]) * (1 >> scaleFactor));
+        cbf16_t iqSample;
+        iqSample.real = I;
+        iqSample.imag = Q;
+        output.push_back(iqSample);
     }
 
     return output;
