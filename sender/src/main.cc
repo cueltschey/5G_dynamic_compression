@@ -42,8 +42,8 @@ int main() {
         std::vector<cbf16_t> decompressedIq = compressor.bfpDecompress(compressedBuffer);
 
         for (size_t i = 0; i < iqSamples.size(); i++) {
-          //if(iqSamples[i].real != decompressedIq[i].real)
-            //std::cout << std::to_string(iqSamples[i].real.value) << " : " << std::to_string(compressedBuffer[i]) << std::endl;
+          if(iqSamples[i].real != decompressedIq[i].real)
+            std::cout << std::to_string(iqSamples[i].real.value) << " : " << std::to_string(compressedBuffer[i]) << std::endl;
         }
         // serialize IQ samples
         std::vector<uint8_t> iqBuffer = iqConv.serializeIq(iqSamples);
