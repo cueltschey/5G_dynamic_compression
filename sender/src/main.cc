@@ -10,7 +10,7 @@ int main() {
     Compression compressor;
     IqConverter iqConv;
 
-    std::string videoPath = "/home/ntia/test.mp4";
+    std::string videoPath = "../rick.mp4";
     cv::VideoCapture cap(videoPath);
 
     if (!cap.isOpened()) {
