@@ -382,7 +382,6 @@ add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 
 add_subdirectory(external)
 add_subdirectory(lib)
-add_subdirectory(utils)
 add_subdirectory(receiver)
 add_subdirectory(sender)
 
