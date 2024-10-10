@@ -1,5 +1,6 @@
 #include "srsran/d_compression/compression.h"
 #include "srsran/d_compression/iq.h"
+#include "iq_compression_bfp_impl.h"
 #include <vector>
 #include <cstdint>
 #include <algorithm>
