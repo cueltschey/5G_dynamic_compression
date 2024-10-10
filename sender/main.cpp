@@ -2,14 +2,18 @@
 #include <thread>
 #include <chrono>
 #include "srsran/d_compression/zmq_channel.h"
-#include "srsran/d_compression/compression.h"
 #include "srsran/d_compression/iq.h"
+#include "srsran/adt/complex.h"
+#include "srsran/adt/span.h"
 
 int main(int argc, char** argv) {
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
-    Compression compressor;
-    IqConverter iqConv;
+    iq_conv converter;
 
+    if(argc < 2){
+      std::cerr << "Usage sender <mp4 path>" << std::endl;
+      return 1;
+    }
     std::string videoPath = argv[1];
     cv::VideoCapture cap(videoPath);
 
@@ -18,10 +22,12 @@ int main(int argc, char** argv) {
         return -1;
     }
     double fps = cap.get(cv::CAP_PROP_FPS);
-    int delay = static_cast<int>(1000 / fps);
+    double delay = 1e6 / fps;
+
+    cv::Mat frame;
 
     while (true) {
-        cv::Mat frame;
+        auto loop_start = std::chrono::high_resolution_clock::now();
         cap >> frame;
 
         if (frame.empty()) {
@@ -33,24 +39,24 @@ int main(int argc, char** argv) {
         std::vector<uint8_t> buffer;
         cv::imencode(".jpg", frame, buffer);
 
+        srsran::span<const srsran::cbf16_t> iqSamples;
+        std::vector<uint8_t> new_buffer;
+        converter.to_iq(buffer, iqSamples);
+        converter.from_iq(iqSamples, new_buffer);
 
-        // Convert to IQ
-        std::vector<d_compression::cbf16_t> iqSamples = iqConv.toIq(buffer);
 
-        // HACK: Testing
-        std::vector<uint8_t> compressedBuffer = compressor.bfpCompress(iqSamples);
-        std::vector<d_compression::cbf16_t> decompressedIq = compressor.bfpDecompress(compressedBuffer);
+        std::cout << "Send frame of size: " << zmqSender.send(new_buffer) << std::endl;
 
-        for (size_t i = 0; i < iqSamples.size(); i++) {
-          if(iqSamples[i].real.value != decompressedIq[i].real.value)
-            std::cout << std::to_string(iqSamples[i].real.value) << " : " << std::to_string(compressedBuffer[i]) << std::endl;
-        }
-        // serialize IQ samples
-        std::vector<uint8_t> iqBuffer = iqConv.serializeIq(iqSamples);
 
-        std::cout << "Send frame of size: " << zmqSender.send(iqBuffer) << std::endl;
+        auto loop_end = std::chrono::high_resolution_clock::now();
+        auto loop_us = std::chrono::duration_cast<std::chrono::microseconds>(loop_end - loop_start);
+        std::cout << loop_us.count() << std::endl;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
+
+        std::chrono::microseconds sleep_time = std::chrono::microseconds(static_cast<int>(std::abs(delay - loop_us.count())));
+        std::this_thread::sleep_for(sleep_time);
+        std::cout << "Sleeping for: " << sleep_time.count() << std::endl;
     }
 
     return 0;

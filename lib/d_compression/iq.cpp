@@ -1,74 +1,69 @@
+#include <iostream>
 #include "srsran/d_compression/iq.h"
+#include "srsran/adt/complex.h"
+#include "srsran/adt/span.h"
 
 
-std::vector<d_compression::cbf16_t> IqConverter::toIq(const std::vector<uint8_t>& data) {
-    std::vector<d_compression::cbf16_t> iqSamples;
-
-    for (size_t i = 0; i < data.size(); ++i) {
-        uint8_t byteValue = data[i];
-        d_compression::bf16_t I(static_cast<uint16_t>(byteValue) - 128.0f);
-        d_compression::bf16_t Q(static_cast<uint16_t>((byteValue + 64) % 256) - 128.0f);
-        d_compression::cbf16_t newSample;
+void iq_conv::to_iq(std::vector<uint8_t> in, srsran::span<const srsran::cbf16_t>& out) {
+    std::vector<srsran::cbf16_t> tmp;
+    tmp.reserve(in.size());
+    for (uint8_t val : in) {
+        srsran::bf16_t I = srsran::to_bf16(static_cast<float>(val) - 128.0f);
+        srsran::bf16_t Q = srsran::to_bf16(static_cast<float>((val + 64) % 256) - 128.0f);
+        srsran::cbf16_t newSample;
         newSample.real = I;
         newSample.imag = Q;
-        iqSamples.push_back(newSample);
+        tmp.push_back(newSample);
     }
-
-    return iqSamples;
+    out = srsran::span<const srsran::cbf16_t>(tmp.data(), tmp.size());
 }
 
 
-std::vector<uint8_t> IqConverter::fromIq(const std::vector<d_compression::cbf16_t>& iqSamples) {
-    std::vector<uint8_t> originalData;
-
-    for (const auto& sample : iqSamples) {
-        float I = static_cast<float>(sample.real.value) + 128.0f; // Rescale and normalize to uint8_t
-
+void iq_conv::from_iq(srsran::span<const srsran::cbf16_t> in, std::vector<uint8_t>& out) {
+    out = std::vector<uint8_t>();
+    for (const srsran::cbf16_t iq : in) {
+        float I = srsran::to_float(iq.real) + 128.0f; // Rescale and normalize to uint8_t
         uint8_t originalI = static_cast<uint8_t>(I);
-        originalData.push_back(originalI);
+        out.push_back(originalI);
     }
-
-    return originalData;
+    if(out.size() != in.size()){
+      std::cerr << "conversion failed" << std::endl;
+    }
 }
 
 
-std::vector<uint8_t> IqConverter::serializeIq(const std::vector<d_compression::cbf16_t>& iqSamples) {
-    std::vector<uint8_t> serializedData;
-    for (const auto& sample : iqSamples) {
-        uint16_t realValue = sample.real.value;
-        uint16_t imagValue = sample.imag.value;
+void iq_conv::serialize_iq(srsran::span<const srsran::cbf16_t>& in, std::vector<uint8_t>& out) {
+    for (const auto& sample : in) {
+        //uint16_t realValue = sample.real.value;
+        //uint16_t imagValue = sample.imag.value;
 
         // Append real and imaginary parts to the serializedData
-        uint8_t a = static_cast<uint8_t>(realValue);
-        uint8_t b = static_cast<uint8_t>(realValue >> 8);
-        uint8_t c = static_cast<uint8_t>(imagValue);
-        uint8_t d = static_cast<uint8_t>(imagValue >> 8);
+        //uint8_t a = static_cast<uint8_t>(realValue);
+        //uint8_t b = static_cast<uint8_t>(realValue >> 8);
+        //uint8_t c = static_cast<uint8_t>(imagValue);
+        //uint8_t d = static_cast<uint8_t>(imagValue >> 8);
 
-        serializedData.push_back(a);
-        serializedData.push_back(b);
-        serializedData.push_back(c);
-        serializedData.push_back(d);
+        //serializedData.push_back(a);
+        //serializedData.push_back(b);
+        //serializedData.push_back(c);
+        //serializedData.push_back(d);
     }
-    return serializedData;
 }
 
-std::vector<d_compression::cbf16_t> IqConverter::deserializeIq(const std::vector<uint8_t>& serializedData) {
-    std::vector<d_compression::cbf16_t> iqSamples;
-    if (serializedData.size() % 4 != 0) {
+void iq_conv::deserialize_iq(std::vector<uint8_t>& in, srsran::span<const srsran::cbf16_t>& out) {
+    if (in.size() % 4 != 0) {
         std::cerr << "Invalid serialized data size." << std::endl;
-        return iqSamples;
+        return;
     }
 
-    for (size_t i = 0; i < serializedData.size(); i += 4) {
-        uint16_t realValue = static_cast<uint16_t>(serializedData[i]) | (static_cast<uint16_t>(serializedData[i + 1]) << 8);
-        uint16_t imagValue = static_cast<uint16_t>(serializedData[i + 2]) | (static_cast<uint16_t>(serializedData[i + 3]) << 8);
-        d_compression::bf16_t I(realValue);
-        d_compression::bf16_t Q(imagValue);
-        d_compression::cbf16_t newSample;
-        newSample.real = I;
-        newSample.imag = Q;
-        iqSamples.push_back(newSample);
-}
-
-    return iqSamples;
+    for (size_t i = 0; i < in.size(); i += 4) {
+        //uint16_t realValue = static_cast<uint16_t>(serializedData[i]) | (static_cast<uint16_t>(serializedData[i + 1]) << 8);
+        //uint16_t imagValue = static_cast<uint16_t>(serializedData[i + 2]) | (static_cast<uint16_t>(serializedData[i + 3]) << 8);
+        //d_compression::bf16_t I(realValue);
+        //d_compression::bf16_t Q(imagValue);
+        //d_compression::srsran::cbf16_t newSample;
+        //newSample.real = I;
+        //newSample.imag = Q;
+        //iqSamples.push_back(newSample);
+    }
 }
