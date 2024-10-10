@@ -28,6 +28,8 @@
 #include "srsran/ran/resource_block.h"
 #include "srsran/srslog/logger.h"
 
+#include <vector>
+
 namespace srsran {
 namespace ofh {
 
@@ -35,6 +37,7 @@ namespace ofh {
 class iq_compression_bfp_impl : public iq_compressor, public iq_decompressor
 {
 public:
+  //std::vector<uint8_t> test;
   // Constructor.
   explicit iq_compression_bfp_impl(srslog::basic_logger& logger_, float iq_scaling_ = 1.0) :
     logger(logger_), iq_scaling(iq_scaling_)

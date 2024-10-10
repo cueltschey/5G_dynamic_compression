@@ -20,7 +20,7 @@
  *
  */
 
-#include "iq_compression_bfp_impl.h"
+#include "srsran/d_compression/iq_compression_bfp_impl.h"
 #include "packing_utils_generic.h"
 #include "srsran/ofh/compression/compression_properties.h"
 #include "srsran/srsvec/dot_prod.h"

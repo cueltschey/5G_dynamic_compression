@@ -3,6 +3,7 @@
 #include <chrono>
 #include "srsran/d_compression/zmq_channel.h"
 #include "srsran/d_compression/iq.h"
+#include "srsran/d_compression/iq_compression_bfp_impl.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 
