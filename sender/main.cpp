@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <thread>
 #include <chrono>
+#include <cstring>
 #include "srsran/d_compression/zmq_channel.h"
 #include "srsran/d_compression/iq.h"
 #include "srsran/d_compression/iq_compression_bfp_impl.h"
@@ -43,10 +44,11 @@ int main(int argc, char** argv) {
         srsran::span<const srsran::cbf16_t> iqSamples;
         std::vector<uint8_t> new_buffer;
         converter.to_iq(buffer, iqSamples);
-        converter.from_iq(iqSamples, new_buffer);
+        
+        std::vector<uint8_t> iqBuffer(iqSamples.size() * sizeof(srsran::cbf16_t));
+        std::memcpy(iqBuffer.data(), iqSamples.data(), iqSamples.size() * sizeof(srsran::cbf16_t));
 
-
-        std::cout << "Send frame of size: " << zmqSender.send(new_buffer) << std::endl;
+        std::cout << "Send frame of size: " << zmqSender.send(iqBuffer) << std::endl;
 
 
         auto loop_end = std::chrono::high_resolution_clock::now();
