@@ -53,6 +53,8 @@ void iq_conv::serialize_iq(srsran::span<const srsran::cbf16_t> in, std::vector<u
 }
 
 void iq_conv::deserialize_iq(std::vector<uint8_t> in, srsran::span<const srsran::cbf16_t>& out) {
+    std::vector<srsran::cbf16_t> tmp;
+    tmp.reserve(in.size());
     if (in.size() % 4 != 0) {
         std::cerr << "Invalid serialized data size." << std::endl;
         return;
@@ -60,17 +62,12 @@ void iq_conv::deserialize_iq(std::vector<uint8_t> in, srsran::span<const srsran:
 
     //out.reserve(in.size() / 4);
     for (size_t i = 0; i < in.size(); i += 4) {
-        //uint16_t realValue = static_cast<uint16_t>(serializedData[i]) | (static_cast<uint16_t>(serializedData[i + 1]) << 8);
-        //uint16_t imagValue = static_cast<uint16_t>(serializedData[i + 2]) | (static_cast<uint16_t>(serializedData[i + 3]) << 8);
-        //srsran::bf16_t I = srsran::to_bf16(static_cast<float>(in[i]) | (static_cast<uint16_t>(in[i + 1]) << 8));
-        //srsran::bf16_t Q = srsran::to_bf16(static_cast<float>(in[i + 2]) | (static_cast<uint16_t>(in[i + 3]) << 8));
-        //d_compression::bf16_t Q(imagValue);
-        //d_compression::srsran::cbf16_t newSample;
-        //newSample.real = I;
-        //newSample.imag = Q;
-        //srsran::cbf16_t newSample;
-        //newSample.real = I;
-        //newSample.imag = Q;
-        //out[i / 4] = newSample;
+        srsran::bf16_t I = srsran::to_bf16(static_cast<uint16_t>(in[i]) | (static_cast<uint16_t>(in[i + 1]) << 8), 1);
+        srsran::bf16_t Q = srsran::to_bf16(static_cast<uint16_t>(in[i + 2]) | (static_cast<uint16_t>(in[i + 3]) << 8), 1);
+        srsran::cbf16_t newSample;
+        newSample.real = I;
+        newSample.imag = Q;
+        tmp.push_back(newSample);
     }
+    out = srsran::span<const srsran::cbf16_t>(tmp.data(), tmp.size());
 }

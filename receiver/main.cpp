@@ -15,9 +15,9 @@ int main() {
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
 
-        srsran::span<srsran::cbf16_t> iqSamples;
+        srsran::span<const srsran::cbf16_t> iqSamples;
 
-        std::memcpy(iqSamples.data(), buffer.data(), buffer.size() / sizeof(srsran::cbf16_t));
+        converter.deserialize_iq(buffer, iqSamples);
 
         std::vector<uint8_t> new_buffer;
         converter.from_iq(iqSamples, new_buffer);
