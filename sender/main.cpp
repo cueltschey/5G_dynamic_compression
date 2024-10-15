@@ -7,6 +7,7 @@
 #include "srsran/d_compression/iq_compression_bfp_impl.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
+#include "srsran/adt/bf16.h"
 
 int main(int argc, char** argv) {
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
@@ -39,25 +40,20 @@ int main(int argc, char** argv) {
 
         // Get the data as a byte buffer
         std::vector<uint8_t> buffer;
-        cv::imencode(".jpg", frame, buffer);
-
         srsran::span<const srsran::cbf16_t> iqSamples;
-        std::vector<uint8_t> new_buffer;
+        cv::imencode(".jpg", frame, buffer);
         converter.to_iq(buffer, iqSamples);
-
-        converter.serialize_iq(iqSamples, new_buffer);
-        std::cout << "Send frame of size: " << zmqSender.send(new_buffer) << std::endl;
+        //srsran::span<uint8_t> new_buffer(nullptr, (static_cast<int>(iqSamples.size()) / srsran::NOF_SUBCARRIERS_PER_RB) * srsran::NOF_SUBCARRIERS_PER_RB * 32 + 1);
+        //std::cout << new_buffer.size() << std::endl;
+        //srsran::ofh::iq_compression_bfp_impl::compress(new_buffer, iqSamples.subspan(0, 10000));
+        std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
 
 
         auto loop_end = std::chrono::high_resolution_clock::now();
         auto loop_us = std::chrono::duration_cast<std::chrono::microseconds>(loop_end - loop_start);
-        std::cout << loop_us.count() << std::endl;
-
-
 
         std::chrono::microseconds sleep_time = std::chrono::microseconds(static_cast<int>(std::abs(delay - loop_us.count())));
         std::this_thread::sleep_for(sleep_time);
-        std::cout << "Sleeping for: " << sleep_time.count() << std::endl;
     }
 
     return 0;

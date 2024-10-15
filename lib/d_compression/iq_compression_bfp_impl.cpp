@@ -37,16 +37,8 @@ void iq_compression_bfp_impl::quantize_input(span<int16_t> out, span<const bf16_
   quantizer q(Q_BIT_WIDTH);
 
   // Convert input to int16_t representation.
-  q.to_fixed_point(out, in, iq_scaling);
+  q.to_fixed_point(out, in, 1.0);
 
-  if (SRSRAN_UNLIKELY(logger.debug.enabled() && !out.empty())) {
-    // Calculate and print RMS of quantized samples.
-    float sum_squares = srsvec::dot_prod(out, out, 0);
-    float rms         = std::sqrt(sum_squares / out.size());
-    if (std::isnormal(rms)) {
-      logger.debug("Quantized IQ samples RMS value of '{}'", rms);
-    }
-  }
 }
 
 void iq_compression_bfp_impl::compress_prb_generic(span<uint8_t>       comp_prb_buffer,
@@ -78,14 +70,15 @@ void iq_compression_bfp_impl::compress_prb_generic(span<uint8_t>       comp_prb_
 }
 
 void iq_compression_bfp_impl::compress(span<uint8_t>                buffer,
-                                       span<const cbf16_t>          iq_data,
-                                       const ru_compression_params& params)
+                                       span<const cbf16_t>          iq_data)
 {
   // Number of input PRBs.
   unsigned nof_prbs = (iq_data.size() / NOF_SUBCARRIERS_PER_RB);
 
   // Size in bytes of one compressed PRB using the given compression parameters.
-  unsigned prb_size = get_compressed_prb_size(params).value();
+  //unsigned prb_size = get_compressed_prb_size(params).value();
+  unsigned data_width = 16;
+  unsigned prb_size = NOF_SUBCARRIERS_PER_RB * 2 * data_width;
 
   srsran_assert(buffer.size() >= prb_size * nof_prbs, "Output buffer doesn't have enough space to decompress PRBs");
 
@@ -101,7 +94,7 @@ void iq_compression_bfp_impl::compress(span<uint8_t>                buffer,
     const auto* in_start_it = input_quantized.begin() + NOF_SAMPLES_PER_PRB * i;
     auto*       out_it      = &buffer[i * prb_size];
     // Compress one resource block.
-    compress_prb_generic({out_it, prb_size}, {in_start_it, NOF_SAMPLES_PER_PRB}, params.data_width);
+    compress_prb_generic({out_it, prb_size}, {in_start_it, NOF_SAMPLES_PER_PRB}, data_width);
   }
 }
 

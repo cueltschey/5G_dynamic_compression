@@ -39,14 +39,14 @@ class iq_compression_bfp_impl : public iq_compressor, public iq_decompressor
 public:
   //std::vector<uint8_t> test;
   // Constructor.
-  explicit iq_compression_bfp_impl(srslog::basic_logger& logger_, float iq_scaling_ = 1.0) :
-    logger(logger_), iq_scaling(iq_scaling_)
+  explicit iq_compression_bfp_impl(float iq_scaling_ = 1.0) :
+    iq_scaling(iq_scaling_)
   {
   }
 
   // See interface for the documentation.
-  virtual void
-  compress(span<uint8_t> buffer, span<const cbf16_t> iq_data, const ru_compression_params& params) override;
+  static void
+  compress(span<uint8_t> buffer, span<const cbf16_t> iq_data);
 
   // See interface for the documentation.
   virtual void
@@ -95,7 +95,7 @@ protected:
   /// \param[in]  comp_prb Compressed PRB IQ samples and compression parameter.
   /// \param[in]  q        Quantizer object.
   /// \param data_width    Bit width of compressed samples.
-  static void
+  virtual void
   decompress_prb_generic(span<cbf16_t> output, span<const uint8_t> comp_prb, const quantizer& q, unsigned data_width);
 
   /// Quantizes complex float samples using the specified bit width.
@@ -103,11 +103,9 @@ protected:
   /// \param[out] out      Quantized samples.
   /// \param[in] in        Span of input float samples.
   /// \param[in] bit_width Number of significant bits used by the quantized samples.
-  void quantize_input(span<int16_t> out, span<const bf16_t> in);
+  static void quantize_input(span<int16_t> out, span<const bf16_t> in);
 
 private:
-  srslog::basic_logger& logger;
-  /// Scaling factor applied to IQ data prior to quantization.
   const float iq_scaling;
 };
 

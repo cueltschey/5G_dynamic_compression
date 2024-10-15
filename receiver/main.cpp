@@ -14,18 +14,12 @@ int main() {
 
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
+        std::cout << "Received buffer of size: " << buffer.size() << std::endl;
 
-        srsran::span<const srsran::cbf16_t> iqSamples;
-
-        converter.deserialize_iq(buffer, iqSamples);
-
-        std::vector<uint8_t> new_buffer;
-        converter.from_iq(iqSamples, new_buffer);
-
-        cv::Mat frame = cv::imdecode(new_buffer, cv::IMREAD_COLOR);
+        cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
 
         if (frame.empty()) {
-            std::cerr << "Error: Received an empty frame!" << std::endl;
+            std::cerr << "Error: Received frame of size: " << frame.size() << std::endl;
             break;
         }
 
