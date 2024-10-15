@@ -30,17 +30,31 @@ void iq_conv::from_iq(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out
 }
 
 void iq_conv::serialize(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out){
-  out = std::vector<uint8_t>(in.size() * 2);
+  out = std::vector<uint8_t>();
   for (srsran::cbf16_t val : in) {
-    out.push_back(static_cast<uint8_t>(srsran::to_int16(val.real, 1) >> 8));
-    out.push_back(static_cast<uint8_t>(srsran::to_int16(val.real, 1) & 0x00000000FFFFFFFF));
+    float I = srsran::to_float(val.real);
+    float Q = srsran::to_float(val.imag);
+    uint8_t* Ibytes = reinterpret_cast<uint8_t*>(&I);
+    uint8_t* Qbytes = reinterpret_cast<uint8_t*>(&Q);
+    out.insert(out.end(), Ibytes, Ibytes + sizeof(float));
+    out.insert(out.end(), Qbytes, Qbytes + sizeof(float));
   }
 }
 
 
 void iq_conv::deserialize(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out){
-  out = std::vector<srsran::cbf16_t>(in.size() / 2);
-  for (size_t i = 0; i < in.size(); i += 2) {
-    out.push_back((static_cast<uint16_t>(in[i]) << 8) | static_cast<uint16_t>(in[i + 1]));
+  out = std::vector<srsran::cbf16_t>();
+  for (size_t i = 0; i < in.size(); i += sizeof(float) * 2) {
+    float If;
+    float Qf;
+    std::memcpy(&If, in.data() + i, sizeof(float));
+    std::memcpy(&Qf, in.data() + i + sizeof(float), sizeof(float));
+
+    srsran::bf16_t I = srsran::to_bf16(If);
+    srsran::bf16_t Q = srsran::to_bf16(Qf);
+    srsran::cbf16_t newSample;
+    newSample.real = I;
+    newSample.imag = Q;
+    out.push_back(newSample);
   }
 }

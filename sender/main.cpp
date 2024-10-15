@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         std::vector<srsran::cbf16_t> iqSamples;
         cv::imencode(".jpg", frame, buffer);
         converter.to_iq(buffer, iqSamples);
-        converter.from_iq(iqSamples, buffer);
+        converter.serialize(iqSamples, buffer);
         std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
 
 

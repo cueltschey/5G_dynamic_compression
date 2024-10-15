@@ -16,6 +16,10 @@ int main() {
         std::vector<uint8_t> buffer = zmqReciever.recv();
         std::cout << "Received buffer of size: " << buffer.size() << std::endl;
 
+        std::vector<srsran::cbf16_t> iqSamples;
+        converter.deserialize(buffer, iqSamples);
+        converter.from_iq(iqSamples, buffer);
+
         cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
 
         if (frame.empty()) {
