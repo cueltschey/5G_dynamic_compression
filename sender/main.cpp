@@ -34,13 +34,14 @@ int main(int argc, char** argv) {
 
         if (frame.empty()) {
             std::cout << "End of video stream" << std::endl;
-            break;  // Exit the loop when the video ends
+            break;
         }
 
         std::vector<uint8_t> buffer;
-        srsran::span<const srsran::cbf16_t> iqSamples;
+        std::vector<srsran::cbf16_t> iqSamples;
         cv::imencode(".jpg", frame, buffer);
         converter.to_iq(buffer, iqSamples);
+        converter.from_iq(iqSamples, buffer);
         std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
 
 
