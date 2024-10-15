@@ -4,7 +4,6 @@
 #include <cstring>
 #include "srsran/d_compression/zmq_channel.h"
 #include "srsran/d_compression/iq.h"
-#include "srsran/d_compression/iq_compression_bfp_impl.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 #include "srsran/adt/bf16.h"
@@ -38,14 +37,10 @@ int main(int argc, char** argv) {
             break;  // Exit the loop when the video ends
         }
 
-        // Get the data as a byte buffer
         std::vector<uint8_t> buffer;
         srsran::span<const srsran::cbf16_t> iqSamples;
         cv::imencode(".jpg", frame, buffer);
         converter.to_iq(buffer, iqSamples);
-        //srsran::span<uint8_t> new_buffer(nullptr, (static_cast<int>(iqSamples.size()) / srsran::NOF_SUBCARRIERS_PER_RB) * srsran::NOF_SUBCARRIERS_PER_RB * 32 + 1);
-        //std::cout << new_buffer.size() << std::endl;
-        //srsran::ofh::iq_compression_bfp_impl::compress(new_buffer, iqSamples.subspan(0, 10000));
         std::cout << "Send frame of size: " << zmqSender.send(buffer) << std::endl;
 
 
