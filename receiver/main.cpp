@@ -12,12 +12,27 @@ int main() {
     d_compression::zmq_channel zmqReciever("tcp://localhost:5555", false);
     iq_conv converter;
 
+    compression_options comp_type;
+
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
         std::cout << "Received buffer of size: " << buffer.size() << std::endl;
 
+        // read and pop compression type
+        comp_type = static_cast<compression_options>(buffer.front());
+        buffer.erase(buffer.begin());
+
         std::vector<srsran::cbf16_t> iqSamples;
-        converter.deserialize(buffer, iqSamples);
+        switch (comp_type) {
+          case NONE:
+            converter.deserialize(buffer, iqSamples);
+            break;
+          case BFP:
+            // TODO: BFP decompress
+            break;
+          default:
+            break;
+        }
         converter.from_iq(iqSamples, buffer);
 
         cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);

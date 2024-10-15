@@ -6,9 +6,13 @@
 #include <vector>
 #include <cstring>
 #include <cstdint>
-#include "srsran/adt/span.h"
 #include "srsran/adt/complex.h"
 
+
+typedef enum {
+  NONE,
+  BFP,
+} compression_options;
 
 class iq_conv {
 public:
