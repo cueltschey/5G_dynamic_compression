@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
     iq_conv converter;
 
-    compression_options comp_type = compression_options::NONE;
+    compression_options comp_type = compression_options::BFP;
 
 
     while (true) {
@@ -62,9 +62,13 @@ int main(int argc, char** argv) {
 
         auto compression_start = std::chrono::high_resolution_clock::now();
         switch (comp_type) {
-          case BFP:
+          case BFP: {
             compression_name = "Block Floating Point";
-           // TODO: BFP compress
+            bfp_compressor c;
+            //c.compress(iqSamples, buffer);
+            break;
+          }
+          case NONE:
             break;
           default:
             break;
@@ -76,8 +80,9 @@ int main(int argc, char** argv) {
 
         std::cout << "Frame length: " << compressed_buffer_len << std::endl;
         std::cout << "\tCompression type: " << compression_name << std::endl;
-        std::cout << "\tCompression ratio: " << compressed_buffer_len / uncompressed_buffer_len << std::endl;
-        std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << std::endl;
+        std::cout << "\tCompression ratio: " << (compressed_buffer_len / uncompressed_buffer_len) * 100 << "%" << std::endl;
+        std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
+
         // Send compression type
         buffer.insert(buffer.begin(), static_cast<uint8_t>(comp_type));
 

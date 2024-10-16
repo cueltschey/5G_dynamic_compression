@@ -29,6 +29,7 @@ int main() {
             break;
           case BFP:
             // TODO: BFP decompress
+            converter.deserialize(buffer, iqSamples);
             break;
           default:
             break;
