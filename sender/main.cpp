@@ -33,9 +33,11 @@ int main(int argc, char** argv) {
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
     iq_conv converter;
 
-    compression_options comp_type = compression_options::BFP;
+    compression_options comp_type = compression_options::NONE;
 
 
+    std::chrono::milliseconds total_compress;
+    std::chrono::milliseconds total_transmit;
     while (true) {
         auto loop_start = std::chrono::high_resolution_clock::now();
         cap >> frame;
@@ -54,20 +56,19 @@ int main(int argc, char** argv) {
         converter.to_iq(buffer, iqSamples);
 
         converter.serialize(iqSamples, buffer);
-        size_t uncompressed_buffer_len = buffer.size();
+        float uncompressed_buffer_len = static_cast<float>(buffer.size());
 
         // Apply compression
 
         std::string compression_name = "None";
 
         auto compression_start = std::chrono::high_resolution_clock::now();
+        bfp_compressor c;
         switch (comp_type) {
-          case BFP: {
+          case BFP:
             compression_name = "Block Floating Point";
-            bfp_compressor c;
-            //c.compress(iqSamples, buffer);
+            c.compress(iqSamples, buffer);
             break;
-          }
           case NONE:
             break;
           default:
@@ -75,19 +76,29 @@ int main(int argc, char** argv) {
         }
         auto compression_end = std::chrono::high_resolution_clock::now();
 
-        size_t compressed_buffer_len = buffer.size();
-        auto compression_time = std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
+        float compressed_buffer_len = static_cast<float>(buffer.size());
 
-        std::cout << "Frame length: " << compressed_buffer_len << std::endl;
-        std::cout << "\tCompression type: " << compression_name << std::endl;
-        std::cout << "\tCompression ratio: " << (compressed_buffer_len / uncompressed_buffer_len) * 100 << "%" << std::endl;
-        std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
+        auto compression_time = std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
 
         // Send compression type
         buffer.insert(buffer.begin(), static_cast<uint8_t>(comp_type));
 
         // Transmit buffer
+        auto transmit_start = std::chrono::high_resolution_clock::now();
         zmqSender.send(buffer);
+        auto transmit_end = std::chrono::high_resolution_clock::now();
+        auto transmit_time = std::chrono::duration_cast<std::chrono::microseconds>(transmit_end - transmit_start);
+
+        total_transmit = std::chrono::duration_cast<std::chrono::microseconds>(total_transmit + transmit_time);
+        total_compress = std::chrono::duration_cast<std::chrono::microseconds>(total_compress + compression_time);
+
+        std::cout << "Sending with compression -> " << compression_name << std::endl;
+        std::cout << "\tFrame size: " << compressed_buffer_len << std::endl;
+        std::cout << "\tCompression ratio: " << (compressed_buffer_len / uncompressed_buffer_len) * 100 << "%" << std::endl;
+        std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
+        std::cout << "\tTransmission duration: " << std::to_string(transmit_time.count()) << " microseconds" << std::endl;
+        std::cout << "\tTransmission average: " << std::to_string(total_transmit.count()) << " microseconds" << std::endl;
+        std::cout << "\tCompression average: " << std::to_string(total_compress.count()) << " microseconds" << std::endl;
 
 
         // Maintain frame rate

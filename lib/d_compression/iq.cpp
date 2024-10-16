@@ -7,7 +7,7 @@
 void iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out) {
   out = std::vector<srsran::cbf16_t>();
   for (uint8_t val : in) {
-    srsran::bf16_t I = srsran::to_bf16(static_cast<float>(val) / 255.0f - 0.5f);
+    srsran::bf16_t I = srsran::to_bf16(static_cast<float>(val) * 255.0f - 0.5f);
     srsran::bf16_t Q = srsran::to_bf16(static_cast<float>((val + 64) % 256) / 255.0f - 0.5f);
     
     srsran::cbf16_t newSample;
@@ -20,8 +20,8 @@ void iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out) 
 void iq_conv::from_iq(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out) {
   out = std::vector<uint8_t>();
   for (srsran::cbf16_t iq : in) {
-    float I = (srsran::to_float(iq.real) + 0.5f) * 255.0f;
-    uint8_t originalI = static_cast<uint8_t>(std::round(I)); // Use rounding for better precision recovery
+    float I = (srsran::to_float(iq.real) + 0.5f) / 255.0f;
+    uint8_t originalI = static_cast<uint8_t>(std::round(I));
     out.push_back(originalI);
   }
   

@@ -26,15 +26,14 @@ int main() {
         switch (comp_type) {
           case NONE:
             converter.deserialize(buffer, iqSamples);
+            converter.from_iq(iqSamples, buffer);
             break;
           case BFP:
             // TODO: BFP decompress
-            converter.deserialize(buffer, iqSamples);
             break;
           default:
             break;
         }
-        converter.from_iq(iqSamples, buffer);
 
         cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
 

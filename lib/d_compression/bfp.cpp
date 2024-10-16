@@ -8,13 +8,14 @@
 
 
 
-void bfp_compressor::compress(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out){
-  //out = std::vector<uint8_t>();
+void bfp_compressor::compress(const std::vector<srsran::cbf16_t>& in, std::vector<uint8_t>& out){
+  out.clear();
   unsigned nof_prbs = std::floor(in.size() / NOF_SAMPLES_PER_PRB) + 1;
   for (unsigned i = 0; i < nof_prbs; i++) {
     std::vector<srsran::cbf16_t> inter(in.begin() + NOF_SAMPLES_PER_PRB * i,
         in.end() < in.begin() + NOF_SAMPLES_PER_PRB * (i + 1)? in.end() : in.begin() + NOF_SAMPLES_PER_PRB * (i + 1));
-    compress_prb_generic(inter);
+    std::vector<uint8_t> chunk = compress_prb_generic(inter);
+    out.insert(out.end(), chunk.begin(), chunk.end());
   }
 }
 
@@ -35,7 +36,10 @@ std::vector<uint8_t> bfp_compressor::compress_prb_generic(std::vector<srsran::cb
   uint8_t exponent = static_cast<uint8_t>(std::log2(max_float));
   leading_zeros = 31 - exponent;
 
-  for (size_t i = 0; i != NOF_SAMPLES_PER_PRB; i++) {
-    //out.push_back();
+  for (size_t i = 0; i != NOF_SAMPLES_PER_PRB; i ++) {
+    float I = (srsran::to_float(in[i].real) + 0.5f) / 255.0f;
+    out.push_back(static_cast<uint8_t>(std::round(I)));
+    //out.push_back(static_cast<uint8_t>(srsran::to_float(in[i].imag)));
   }
+  return out;
 }
