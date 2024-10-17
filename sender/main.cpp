@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <cstring>
+#include <fstream>
 #include "srsran/d_compression/zmq_channel.h"
 #include "srsran/d_compression/iq.h"
 #include "srsran/d_compression/bfp.h"
@@ -24,6 +25,12 @@ int main(int argc, char** argv) {
         return -1;
     }
     cv::Mat frame;
+
+    // Open CSV data file
+    std::ofstream csv_file("./test.csv");
+    csv_file << "index,compression type,byte length,compression ratio,compression duration,";
+    csv_file << "transmission duration,average compression duration,";
+    csv_file << "average transmission duration" << std::endl;
 
     // Initialize video parameters
     double fps = cap.get(cv::CAP_PROP_FPS);
@@ -102,8 +109,16 @@ int main(int argc, char** argv) {
       std::cout << "\tCompression ratio: " << (comp_ratio) * 100 << "%" << std::endl;
       std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
       std::cout << "\tTransmission duration: " << std::to_string(transmit_time.count()) << " microseconds" << std::endl;
-      std::cout << "\tTransmission average: " << std::to_string(total_transmit.count() / frame_index) << " microseconds" << std::endl;
-      std::cout << "\tCompression average: " << std::to_string(total_compress.count() / frame_index) << " microseconds" << std::endl;
+      std::cout << "\tCompression average: " << std::to_string(avg_compression) << " microseconds" << std::endl;
+      std::cout << "\tTransmission average: " << std::to_string(avg_transmit) << " microseconds" << std::endl;
+
+      // Save data in CSV
+      csv_file << std::to_string(frame_index) << "," << compression_name << ",";
+      csv_file << compressed_buffer_len << "," << comp_ratio << ",";
+      csv_file << std::to_string(compression_time.count()) << ",";
+      csv_file << std::to_string(transmit_time.count()) << ",";
+      csv_file << std::to_string(avg_compression) << ",";
+      csv_file << std::to_string(avg_transmit) << std::endl;
 
 
       state_machine.update(frame_index, comp_ratio, avg_compression, avg_transmit);
