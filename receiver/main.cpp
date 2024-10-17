@@ -5,6 +5,7 @@
 #include <cstring>
 #include "srsran/d_compression/zmq_channel.h"
 #include "srsran/d_compression/iq.h"
+#include "srsran/d_compression/bfp.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 
@@ -22,6 +23,7 @@ int main() {
         comp_type = static_cast<compression_options>(buffer.front());
         buffer.erase(buffer.begin());
 
+        bfp_compressor c;
         std::vector<srsran::cbf16_t> iqSamples;
         switch (comp_type) {
           case NONE:
@@ -29,7 +31,7 @@ int main() {
             converter.from_iq(iqSamples, buffer);
             break;
           case BFP:
-            // TODO: BFP decompress
+            buffer = c.decompress(buffer);
             break;
           default:
             break;

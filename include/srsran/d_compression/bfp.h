@@ -18,6 +18,7 @@ public:
   explicit bfp_compressor(){}
   void compress(const std::vector<srsran::cbf16_t>& in, std::vector<uint8_t>& out);
   std::vector<uint8_t> compress_prb_generic(std::vector<srsran::cbf16_t> in);
+  std::vector<uint8_t> decompress(std::vector<uint8_t> in);
   static unsigned determine_exponent(uint16_t x, unsigned data_width)
   {
 

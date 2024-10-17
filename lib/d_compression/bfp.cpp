@@ -36,10 +36,22 @@ std::vector<uint8_t> bfp_compressor::compress_prb_generic(std::vector<srsran::cb
   uint8_t exponent = static_cast<uint8_t>(std::log2(max_float));
   leading_zeros = 31 - exponent;
 
-  for (size_t i = 0; i != NOF_SAMPLES_PER_PRB; i ++) {
+  for (size_t i = 0; i != NOF_SAMPLES_PER_PRB && i < in.size(); i ++) {
     float I = (srsran::to_float(in[i].real) + 0.5f) / 255.0f;
     out.push_back(static_cast<uint8_t>(std::round(I)));
-    //out.push_back(static_cast<uint8_t>(srsran::to_float(in[i].imag)));
+    float Q = (srsran::to_float(in[i].real) + 0.5f) / 255.0f;
+    out.push_back(static_cast<uint8_t>(std::round(Q)));
   }
   return out;
 }
+
+std::vector<uint8_t> bfp_compressor::decompress(std::vector<uint8_t> in){
+  std::vector<uint8_t> out;
+  for (size_t i = 0; i < in.size(); i++) {
+    if(i % 2 == 0){
+      out.push_back(in[i]);
+    }
+  }
+  return out;
+}
+
