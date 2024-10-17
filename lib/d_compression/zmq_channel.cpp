@@ -1,4 +1,4 @@
-#include "srsran/d_compression/zmq_channel.h"
+#include "d_compression/zmq_channel.h"
 
 namespace d_compression {
   zmq_channel::zmq_channel(const std::string& address, bool is_sender)

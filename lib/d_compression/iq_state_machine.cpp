@@ -1,5 +1,5 @@
 #include <iostream>
-#include "srsran/d_compression/iq_state_machine.h"
+#include "d_compression/iq_state_machine.h"
 
 void iq_state_machine::update(int frame_index, double compression_ratio, long avg_compression, long avg_transmission) {
   if(frame_index % interval != 0){

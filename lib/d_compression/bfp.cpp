@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "srsran/d_compression/bfp.h"
+#include "d_compression/bfp.h"
 
 
 

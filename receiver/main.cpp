@@ -3,9 +3,9 @@
 #include <opencv2/opencv.hpp>  // OpenCV for displaying video
 #include <vector>
 #include <cstring>
-#include "srsran/d_compression/zmq_channel.h"
-#include "srsran/d_compression/iq.h"
-#include "srsran/d_compression/bfp.h"
+#include "d_compression/zmq_channel.h"
+#include "d_compression/iq.h"
+#include "d_compression/bfp.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 

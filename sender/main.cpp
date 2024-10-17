@@ -3,10 +3,10 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
-#include "srsran/d_compression/zmq_channel.h"
-#include "srsran/d_compression/iq.h"
-#include "srsran/d_compression/bfp.h"
-#include "srsran/d_compression/iq_state_machine.h"
+#include "d_compression/zmq_channel.h"
+#include "d_compression/iq.h"
+#include "d_compression/bfp.h"
+#include "d_compression/iq_state_machine.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/bf16.h"
 
