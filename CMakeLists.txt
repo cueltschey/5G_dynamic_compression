@@ -218,44 +218,6 @@ endif()
 # Find dependencies
 ########################################################################
 
-# Backward-cpp
-find_package(Backward)
-if(Backward_FOUND)
-    if(BACKWARD_HAS_EXTERNAL_LIBRARIES)
-        message(STATUS "Building with backward-cpp support")
-    else (BACKWARD_HAS_EXTERNAL_LIBRARIES)
-        message(STATUS "Backward-cpp found, but external libraries are missing.")
-    endif()
-endif()
-
-# Crypto
-find_package(MbedTLS REQUIRED)
-if (MBEDTLS_FOUND)
-    set(SEC_INCLUDE_DIRS "${MBEDTLS_INCLUDE_DIRS}")
-    if(BUILD_STATIC)
-        set(SEC_LIBRARIES "${MBEDTLS_STATIC_LIBRARIES}")
-    else(BUILD_STATIC)
-        set(SEC_LIBRARIES "${MBEDTLS_LIBRARIES}")
-    endif(BUILD_STATIC)
-else(MBEDTLS_FOUND)
-    message(FATAL_ERROR "mbedTLS is required to build ${CMAKE_PROJECT_NAME}")
-endif (MBEDTLS_FOUND)
-
-# FFTW
-if (ENABLE_FFTW)
-    find_package(FFTW3F)
-endif (ENABLE_FFTW)
-
-# Google Tests
-if (BUILD_TESTS)
-    find_package(GTest REQUIRED)
-
-    # Alias gtest_discover_tests increase discovery the timeout.
-    function(gtest_discover_tests)
-        _gtest_discover_tests(${ARGV} DISCOVERY_TIMEOUT 15)
-    endfunction()
-endif (BUILD_TESTS)
-
 # Threads
 find_package(Threads REQUIRED)
 
