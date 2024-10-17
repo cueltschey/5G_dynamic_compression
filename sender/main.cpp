@@ -28,9 +28,9 @@ int main(int argc, char** argv) {
 
     // Open CSV data file
     std::ofstream csv_file("./test.csv");
-    csv_file << "index,compression type,byte length,compression ratio,compression duration,";
-    csv_file << "transmission duration,average compression duration,";
-    csv_file << "average transmission duration" << std::endl;
+    csv_file << "index,compression_type,byte_length,compression_ratio,compression_duration,";
+    csv_file << "transmission_duration,average_compression_duration,";
+    csv_file << "average_transmission_duration" << std::endl;
 
     // Initialize video parameters
     double fps = cap.get(cv::CAP_PROP_FPS);
@@ -113,7 +113,11 @@ int main(int argc, char** argv) {
       std::cout << "\tTransmission average: " << std::to_string(avg_transmit) << " microseconds" << std::endl;
 
       // Save data in CSV
-      csv_file << std::to_string(frame_index) << "," << compression_name << ",";
+      if(compression_name == "None"){
+        csv_file << std::to_string(frame_index) << "," << std::to_string(0) << ",";
+      } else {
+        csv_file << std::to_string(frame_index) << "," << std::to_string(1) << ",";
+      }
       csv_file << compressed_buffer_len << "," << comp_ratio << ",";
       csv_file << std::to_string(compression_time.count()) << ",";
       csv_file << std::to_string(transmit_time.count()) << ",";
