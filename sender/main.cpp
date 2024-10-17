@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     std::ofstream csv_file("./test.csv");
     csv_file << "index,compression_type,byte_length,compression_ratio,compression_duration,";
     csv_file << "transmission_duration,average_compression_duration,";
-    csv_file << "average_transmission_duration" << std::endl;
+    csv_file << "average_transmission_duration,average_both" << std::endl;
 
     // Initialize video parameters
     double fps = cap.get(cv::CAP_PROP_FPS);
@@ -41,10 +41,11 @@ int main(int argc, char** argv) {
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
     iq_conv converter;
     bfp_compressor c;
-    iq_state_machine state_machine;
+    iq_state_machine state_machine(1);
 
     std::chrono::microseconds total_compress = static_cast<std::chrono::microseconds>(0);
     std::chrono::microseconds total_transmit = static_cast<std::chrono::microseconds>(0);
+    std::chrono::microseconds total_both = static_cast<std::chrono::microseconds>(0);
     int frame_index = 0;
 
     while (true) {
@@ -100,8 +101,10 @@ int main(int argc, char** argv) {
 
       total_transmit = std::chrono::duration_cast<std::chrono::microseconds>(total_transmit + transmit_time);
       total_compress = std::chrono::duration_cast<std::chrono::microseconds>(total_compress + compression_time);
+      total_both = std::chrono::duration_cast<std::chrono::microseconds>(total_both + compression_time + transmit_time);
       long avg_transmit = static_cast<long>(total_transmit.count() / frame_index);
       long avg_compression = static_cast<long>(total_compress.count() / frame_index);
+      long avg_both = static_cast<long>(total_both.count() / frame_index);
       double comp_ratio = static_cast<double>(compressed_buffer_len / uncompressed_buffer_len);
 
       std::cout << "Sending with compression -> " << compression_name << std::endl;
@@ -110,22 +113,20 @@ int main(int argc, char** argv) {
       std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
       std::cout << "\tTransmission duration: " << std::to_string(transmit_time.count()) << " microseconds" << std::endl;
       std::cout << "\tCompression average: " << std::to_string(avg_compression) << " microseconds" << std::endl;
-      std::cout << "\tTransmission average: " << std::to_string(avg_transmit) << " microseconds" << std::endl;
+      std::cout << "\tTotal Average: " << std::to_string(avg_both) << " microseconds" << std::endl;
 
       // Save data in CSV
-      if(compression_name == "None"){
-        csv_file << std::to_string(frame_index) << "," << std::to_string(0) << ",";
-      } else {
-        csv_file << std::to_string(frame_index) << "," << std::to_string(1) << ",";
-      }
+      csv_file << std::to_string(frame_index) << "," << compression_name << ",";
       csv_file << compressed_buffer_len << "," << comp_ratio << ",";
       csv_file << std::to_string(compression_time.count()) << ",";
       csv_file << std::to_string(transmit_time.count()) << ",";
       csv_file << std::to_string(avg_compression) << ",";
-      csv_file << std::to_string(avg_transmit) << std::endl;
+      csv_file << std::to_string(avg_transmit) << ",";
+      csv_file << std::to_string(avg_both) << std::endl;
 
 
-      state_machine.update(frame_index, comp_ratio, avg_compression, avg_transmit);
+      state_machine.update(frame_index, avg_compression, avg_transmit,
+                           static_cast<long>(compression_time.count()), static_cast<long>(transmit_time.count()));
 
       // Maintain frame rate
       auto loop_end = std::chrono::high_resolution_clock::now();

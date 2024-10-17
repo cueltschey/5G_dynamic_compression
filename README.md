@@ -39,10 +39,10 @@ make -j$(nproc)
 # Notes
 
 steps:
-- buffer to IQ
-- compress / serialize IQ into buffer
-- set first item to compression type
-- decompress / deserialize IQ
-- IQ to buffer
-
-image buffer -> IQ data -> alg(Compression or serialization) -> buffer -> send(zmq or uhd) -> buffer -> ~alg(Compression or serialization) -> IQ data -> image buffer
+- fix BFP compression
+- fix IQ encoding
+- state machine vs. DQN vs. greedy algorithm
+- store algo decisions
+- one more compression type
+- different data types
+- run with ZMQ and UHD
