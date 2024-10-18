@@ -8,34 +8,24 @@ size_t iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out
   size_t blank_bytes = 0;
   out.clear();
 
-  for (size_t i = 0; i + 4 <= in.size(); i += 4) {
-    srsran::bf16_t I((static_cast<uint16_t>(in[i]) << 8) | static_cast<uint16_t>(in[i + 1]));
-    srsran::bf16_t Q((static_cast<uint16_t>(in[i + 2]) << 8) | static_cast<uint16_t>(in[i + 3]));
+  for (size_t i = 0; i + 1 < in.size(); i += 2) {
+    srsran::bf16_t I(static_cast<uint16_t>(in[i]) << 8);
+    srsran::bf16_t Q(static_cast<uint16_t>(in[i + 1]) << 8);
 
     srsran::cbf16_t newSample;
     newSample.real = I;
     newSample.imag = Q;
     out.push_back(newSample);
   }
-
-  size_t remaining = in.size() % 4;
-  if (remaining > 0) {
-    size_t pos = in.size() - remaining;
-    srsran::bf16_t I(
-      (static_cast<uint16_t>(pos < in.size()? in[pos]: 0) << 8) | 
-      static_cast<uint16_t>(pos + 1 < in.size()? in[pos + 1] : 0)
-    );
-
-    srsran::bf16_t Q(
-      (static_cast<uint16_t>(pos + 2 < in.size()? in[pos + 2]: 0) << 8) | 
-      static_cast<uint16_t>(pos + 3 < in.size()? in[pos + 3] : 0)
-    );
+  if(in.size() % 2 == 1){
+    srsran::bf16_t I(static_cast<uint16_t>(in[in.size() - 1]) << 8);
+    srsran::bf16_t Q(0);
 
     srsran::cbf16_t newSample;
     newSample.real = I;
     newSample.imag = Q;
     out.push_back(newSample);
-    blank_bytes = 4 - remaining;
+    blank_bytes = 1;
   }
 
   return blank_bytes;
@@ -44,14 +34,10 @@ size_t iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out
 void iq_conv::from_iq(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out, size_t blank_bytes) {
   out = std::vector<uint8_t>();
   for (srsran::cbf16_t iq : in) {
-    uint8_t I_a = static_cast<uint8_t>((iq.real.value()) >> 8);
-    uint8_t I_b = static_cast<uint8_t>(iq.real.value());
-    uint8_t Q_a = static_cast<uint8_t>(iq.imag.value() >> 8);
-    uint8_t Q_b = static_cast<uint8_t>(iq.imag.value());
-    out.push_back(I_a);
-    out.push_back(I_b);
-    out.push_back(Q_a);
-    out.push_back(Q_b);
+    uint8_t I = static_cast<uint8_t>((iq.real.value()) >> 8);
+    uint8_t Q = static_cast<uint8_t>(iq.imag.value() >> 8);
+    out.push_back(I);
+    out.push_back(Q);
   }
   out.resize(out.size() - blank_bytes);
 }
