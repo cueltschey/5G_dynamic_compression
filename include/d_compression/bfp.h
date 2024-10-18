@@ -17,11 +17,10 @@ class bfp_compressor {
 public:
   explicit bfp_compressor(){}
   void compress(const std::vector<srsran::cbf16_t>& in, std::vector<uint8_t>& out);
-  std::vector<uint8_t> compress_prb_generic(std::vector<srsran::cbf16_t> in);
-  std::vector<uint8_t> decompress(std::vector<uint8_t> in);
+  std::vector<uint8_t> compress_prb_generic(const std::vector<srsran::cbf16_t>& in);
+  std::vector<srsran::cbf16_t> decompress(const std::vector<uint8_t>& in);
   static unsigned determine_exponent(uint16_t x, unsigned data_width)
   {
-
     unsigned max_shift       = MAX_IQ_WIDTH - data_width;
     unsigned lz_without_sign = max_shift;
 
@@ -33,6 +32,5 @@ public:
   }
 protected:
   unsigned prb_size;
-  unsigned nof_prbs;
 };
 #endif // !BFP_H

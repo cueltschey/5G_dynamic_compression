@@ -35,7 +35,8 @@ int main() {
             break;
           case BFP:
             std::cout << "Decoding: Block Floating Point -> " << buffer.size() << std::endl;
-            buffer = c.decompress(buffer);
+            iqSamples = c.decompress(buffer);
+            converter.from_iq(iqSamples, buffer, blank_bytes);
             break;
           default:
             break;

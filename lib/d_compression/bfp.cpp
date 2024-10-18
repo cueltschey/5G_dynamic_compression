@@ -14,48 +14,45 @@ void bfp_compressor::compress(const std::vector<srsran::cbf16_t>& in, std::vecto
   for (unsigned i = 0; i < nof_prbs; i++) {
     std::vector<srsran::cbf16_t> inter(in.begin() + NOF_SAMPLES_PER_PRB * i,
         in.end() < in.begin() + NOF_SAMPLES_PER_PRB * (i + 1)? in.end() : in.begin() + NOF_SAMPLES_PER_PRB * (i + 1));
+    if(inter.end() > in.end()){
+      std::cerr << "slice out of range" << std::endl;
+    }
     std::vector<uint8_t> chunk = compress_prb_generic(inter);
     out.insert(out.end(), chunk.begin(), chunk.end());
   }
 }
 
-std::vector<uint8_t> bfp_compressor::compress_prb_generic(std::vector<srsran::cbf16_t> in){
+std::vector<uint8_t> bfp_compressor::compress_prb_generic(const std::vector<srsran::cbf16_t>& in) {
   std::vector<uint8_t> out;
-
-  unsigned leading_zeros;
   srsran::cbf16_t max_value = *std::max_element(in.begin(), in.end(),
-      [](srsran::cbf16_t a, srsran::cbf16_t b){
-        return std::abs(srsran::to_float(a.real)) < std::abs(srsran::to_float(b.real));
-      });
+    [](srsran::cbf16_t a, srsran::cbf16_t b){
+      return a.real.value() < b.real.value();
+    });
 
-  if (srsran::to_float(max_value.real) == 0) {
-      leading_zeros = 0;
-  }
+  double scale_factor = static_cast<double>(255.0 / max_value.real.value());
 
-  float max_float = std::abs(srsran::to_float(max_value.real));
-  uint8_t exponent = static_cast<uint8_t>(std::log2(max_float));
-  leading_zeros = 31 - exponent;
+  out.push_back(static_cast<uint8_t>(scale_factor * 255));
 
-  for (size_t i = 0; i != NOF_SAMPLES_PER_PRB && i < in.size(); i ++) {
-    uint8_t I_a = static_cast<uint8_t>((in[i].real.value()) >> 8);
-    uint8_t I_b = static_cast<uint8_t>(in[i].real.value());
-    uint8_t Q_a = static_cast<uint8_t>(in[i].imag.value() >> 8);
-    uint8_t Q_b = static_cast<uint8_t>(in[i].imag.value());
-    out.push_back(I_a);
-    out.push_back(I_b);
-    out.push_back(Q_a);
-    out.push_back(Q_b);
+
+  for (srsran::cbf16_t iq : in) {
+    out.push_back(std::round(iq.real.value() * scale_factor));
+    out.push_back(std::round(iq.imag.value() * scale_factor));
+    uint16_t modified = std::round(iq.real.value() * scale_factor) / scale_factor;
   }
   return out;
 }
 
-std::vector<uint8_t> bfp_compressor::decompress(std::vector<uint8_t> in){
-  std::vector<uint8_t> out;
-  for (size_t i = 0; i < in.size(); i++) {
-    //if(i % 2 == 0){
-      out.push_back(in[i]);
-    //}
+std::vector<srsran::cbf16_t> bfp_compressor::decompress(const std::vector<uint8_t>& in) {
+  std::vector<srsran::cbf16_t> out;
+  double scale_factor = static_cast<double>(in.front() / 255.0);
+
+  for (size_t i = 1; i + 1 < in.size(); i+=2) {
+    srsran::cbf16_t decompressed;
+    srsran::bf16_t I(static_cast<uint16_t>(in[i] / scale_factor));
+    srsran::bf16_t Q(static_cast<uint16_t>(in[i + 1] / scale_factor));
+    decompressed.real = I;
+    decompressed.imag = Q;
+    out.push_back(decompressed);
   }
   return out;
 }
-
