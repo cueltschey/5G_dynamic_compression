@@ -17,7 +17,6 @@ int main() {
 
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
-        std::cout << "Received buffer of size: " << buffer.size() << std::endl;
 
         // read and pop compression type
         comp_type = static_cast<compression_options>(buffer.front());
@@ -27,10 +26,12 @@ int main() {
         std::vector<srsran::cbf16_t> iqSamples;
         switch (comp_type) {
           case NONE:
+            std::cout << "Decoding: No compression -> " << buffer.size() << std::endl;
             converter.deserialize(buffer, iqSamples);
             converter.from_iq(iqSamples, buffer);
             break;
           case BFP:
+            std::cout << "Decoding: Block Floating Point -> " << buffer.size() << std::endl;
             buffer = c.decompress(buffer);
             break;
           default:
