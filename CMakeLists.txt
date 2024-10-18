@@ -346,6 +346,7 @@ add_subdirectory(external)
 add_subdirectory(lib)
 add_subdirectory(receiver)
 add_subdirectory(sender)
+add_subdirectory(tests)
 
 ########################################################################
 # Export (selected) libraries

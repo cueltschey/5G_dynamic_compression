@@ -4,29 +4,56 @@
 #include "srsran/adt/span.h"
 
 
-void iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out) {
-  out = std::vector<srsran::cbf16_t>();
-  for (size_t i = 0; i < in.size(); i +=2) {
-    srsran::bf16_t I = srsran::to_bf16(static_cast<float>(in[i]) * 255.0f - 0.5f);
-    srsran::bf16_t Q = srsran::to_bf16(static_cast<float>(in[i + 1]) * 255.0f - 0.5f);
-    
+size_t iq_conv::to_iq(std::vector<uint8_t> in, std::vector<srsran::cbf16_t>& out) {
+  size_t blank_bytes = 0;
+  out.clear();
+
+  for (size_t i = 0; i + 4 <= in.size(); i += 4) {
+    srsran::bf16_t I((static_cast<uint16_t>(in[i]) << 8) | static_cast<uint16_t>(in[i + 1]));
+    srsran::bf16_t Q((static_cast<uint16_t>(in[i + 2]) << 8) | static_cast<uint16_t>(in[i + 3]));
+
     srsran::cbf16_t newSample;
     newSample.real = I;
     newSample.imag = Q;
     out.push_back(newSample);
   }
+
+  size_t remaining = in.size() % 4;
+  if (remaining > 0) {
+    size_t pos = in.size() - remaining;
+    srsran::bf16_t I(
+      (static_cast<uint16_t>(pos < in.size()? in[pos]: 0) << 8) | 
+      static_cast<uint16_t>(pos + 1 < in.size()? in[pos + 1] : 0)
+    );
+
+    srsran::bf16_t Q(
+      (static_cast<uint16_t>(pos + 2 < in.size()? in[pos + 2]: 0) << 8) | 
+      static_cast<uint16_t>(pos + 3 < in.size()? in[pos + 3] : 0)
+    );
+
+    srsran::cbf16_t newSample;
+    newSample.real = I;
+    newSample.imag = Q;
+    out.push_back(newSample);
+    blank_bytes = 4 - remaining;
+  }
+
+  return blank_bytes;
 }
 
-void iq_conv::from_iq(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out) {
+void iq_conv::from_iq(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out, size_t blank_bytes) {
   out = std::vector<uint8_t>();
   for (srsran::cbf16_t iq : in) {
-    float I = (srsran::to_float(iq.real) + 0.5f) / 255.0f;
-    float Q = (srsran::to_float(iq.imag) + 0.5f) / 255.0f;
-    uint8_t originalI = static_cast<uint8_t>(std::round(I));
-    uint8_t originalQ = static_cast<uint8_t>(std::round(Q));
-    out.push_back(originalI);
-    out.push_back(originalQ);
+    uint8_t I_a = static_cast<uint8_t>((iq.real.value()) >> 8);
+    uint8_t I_b = static_cast<uint8_t>(iq.real.value());
+    uint8_t Q_a = static_cast<uint8_t>(iq.imag.value() >> 8);
+    uint8_t Q_b = static_cast<uint8_t>(iq.imag.value());
+    out.push_back(I_a);
+    out.push_back(I_b);
+    out.push_back(Q_a);
+    out.push_back(Q_b);
   }
+  out.resize(out.size() - blank_bytes);
 }
 
 void iq_conv::serialize(std::vector<srsran::cbf16_t> in, std::vector<uint8_t>& out){

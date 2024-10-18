@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
     std::chrono::microseconds total_transmit = static_cast<std::chrono::microseconds>(0);
     std::chrono::microseconds total_both = static_cast<std::chrono::microseconds>(0);
     int frame_index = 0;
+    size_t blank_bytes = 0;
 
     while (true) {
       auto loop_start = std::chrono::high_resolution_clock::now();
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
 
       // Convert to IQ
       std::vector<srsran::cbf16_t> iqSamples;
-      converter.to_iq(buffer, iqSamples);
+      blank_bytes = converter.to_iq(buffer, iqSamples);
 
       frame_index++;
       converter.serialize(iqSamples, buffer);
@@ -90,7 +91,8 @@ int main(int argc, char** argv) {
 
       auto compression_time = std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
 
-      // Send compression type
+      // Send compression type and blank_bytes
+      buffer.insert(buffer.begin(), static_cast<uint8_t>(blank_bytes));
       buffer.insert(buffer.begin(), static_cast<uint8_t>(state_machine.get_current_state()));
 
       // Transmit buffer

@@ -14,12 +14,15 @@ int main() {
     iq_conv converter;
 
     compression_options comp_type;
+    size_t blank_bytes = 0;
 
     while (true) {
         std::vector<uint8_t> buffer = zmqReciever.recv();
 
         // read and pop compression type
         comp_type = static_cast<compression_options>(buffer.front());
+        buffer.erase(buffer.begin());
+        blank_bytes = static_cast<size_t>(buffer.front());
         buffer.erase(buffer.begin());
 
         bfp_compressor c;
@@ -28,7 +31,7 @@ int main() {
           case NONE:
             std::cout << "Decoding: No compression -> " << buffer.size() << std::endl;
             converter.deserialize(buffer, iqSamples);
-            converter.from_iq(iqSamples, buffer);
+            converter.from_iq(iqSamples, buffer, blank_bytes);
             break;
           case BFP:
             std::cout << "Decoding: Block Floating Point -> " << buffer.size() << std::endl;
