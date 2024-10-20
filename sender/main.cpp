@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
     size_t blank_bytes = 0;
 
     while (true) {
-
       // read frame
       cap >> frame;
       if (frame.empty()) {
