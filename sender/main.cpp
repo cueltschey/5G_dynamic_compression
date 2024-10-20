@@ -7,6 +7,7 @@
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
 #include "d_compression/rle.h"
+#include "d_compression/lz77.h"
 #include "d_compression/iq_state_machine.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/bf16.h"
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
     iq_conv converter;
     bfp_compressor bfp;
     rle_compressor rle;
+    lz77_compressor lz77;
     iq_state_machine state_machine(1);
 
     std::chrono::microseconds total_compress = static_cast<std::chrono::microseconds>(0);
@@ -86,6 +88,11 @@ int main(int argc, char** argv) {
         case RLE:
           compression_name = "Run Length Encoding";
           rle.compress(buffer, intermediate);
+          buffer = intermediate;
+          break;
+        case LZ77:
+          compression_name = "Lempel Ziv 77";
+          lz77.compress(buffer, intermediate);
           buffer = intermediate;
           break;
         case NONE:

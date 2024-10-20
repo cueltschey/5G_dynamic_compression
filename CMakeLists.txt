@@ -338,6 +338,8 @@ foreach(TMP_DIR ${ALL_HEADER_DIRS})
 endforeach()
 add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 
+find_package(ZLIB REQUIRED)
+
 ########################################################################
 # Add the subdirectories
 ########################################################################

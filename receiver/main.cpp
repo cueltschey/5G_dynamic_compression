@@ -7,6 +7,7 @@
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
 #include "d_compression/rle.h"
+#include "d_compression/lz77.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 
@@ -28,6 +29,7 @@ int main() {
 
         bfp_compressor bfp;
         rle_compressor rle;
+        lz77_compressor lz77;
         std::vector<uint8_t> intermediate;
         std::vector<srsran::cbf16_t> iqSamples;
         switch (comp_type) {
@@ -47,6 +49,14 @@ int main() {
             buffer = intermediate;
             converter.deserialize(buffer, iqSamples);
             converter.from_iq(iqSamples, buffer, blank_bytes);
+            break;
+          case LZ77:
+            std::cout << "Decoding: Lempel Ziv 77 -> " << buffer.size() << std::endl;
+            lz77.decompress(buffer, intermediate);
+            buffer = intermediate;
+            converter.deserialize(buffer, iqSamples);
+            converter.from_iq(iqSamples, buffer, blank_bytes);
+            break;
           default:
             break;
         }

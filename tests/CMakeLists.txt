@@ -13,3 +13,7 @@ add_test(NAME can_compress_bfp COMMAND bfp_compress_test)
 add_executable(rle_compress_test rle_compress_test.cpp)
 target_link_libraries(rle_compress_test gtest gtest_main d_compression)
 add_test(NAME rle_compress_bfp COMMAND rle_compress_test)
+
+add_executable(lz77_compress_test lz77_compress_test.cpp)
+target_link_libraries(lz77_compress_test gtest gtest_main d_compression)
+add_test(NAME lz77_compress_test COMMAND lz77_compress_test)
