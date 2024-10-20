@@ -6,6 +6,7 @@
 #include "d_compression/zmq_channel.h"
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
+#include "d_compression/rle.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/span.h"
 
@@ -25,7 +26,9 @@ int main() {
         blank_bytes = static_cast<size_t>(buffer.front());
         buffer.erase(buffer.begin());
 
-        bfp_compressor c;
+        bfp_compressor bfp;
+        rle_compressor rle;
+        std::vector<uint8_t> intermediate;
         std::vector<srsran::cbf16_t> iqSamples;
         switch (comp_type) {
           case NONE:
@@ -35,9 +38,15 @@ int main() {
             break;
           case BFP:
             std::cout << "Decoding: Block Floating Point -> " << buffer.size() << std::endl;
-            iqSamples = c.decompress(buffer);
+            iqSamples = bfp.decompress(buffer);
             converter.from_iq(iqSamples, buffer, blank_bytes);
             break;
+          case RLE:
+            std::cout << "Decoding: Run Length Encoding -> " << buffer.size() << std::endl;
+            rle.decompress(buffer, intermediate);
+            buffer = intermediate;
+            converter.deserialize(buffer, iqSamples);
+            converter.from_iq(iqSamples, buffer, blank_bytes);
           default:
             break;
         }

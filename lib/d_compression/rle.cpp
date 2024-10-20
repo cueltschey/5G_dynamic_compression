@@ -1,8 +1,9 @@
 #include <vector>
 #include <cstdint>
 #include <iostream>
+#include "d_compression/rle.h"
 
-void decompress(const std::vector<uint8_t>& in, std::vector<uint8_t>& out){
+void rle_compressor::compress(const std::vector<uint8_t>& in, std::vector<uint8_t>& out){
     out.clear();
     size_t n = in.size();
 
@@ -22,9 +23,14 @@ void decompress(const std::vector<uint8_t>& in, std::vector<uint8_t>& out){
       out.push_back(current_byte);
       out.push_back(run_length);
     }
+
+    if(out.size() % 2 != 0){
+      out.push_back(in[in.size() - 1]);
+      out.push_back(1);
+    }
 }
 
-void compress(const std::vector<uint8_t>& in, std::vector<uint8_t>& out){
+void rle_compressor::decompress(const std::vector<uint8_t>& in, std::vector<uint8_t>& out){
     out.clear();
 
     if (in.size() % 2 != 0) {

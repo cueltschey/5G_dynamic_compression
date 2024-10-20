@@ -12,6 +12,7 @@
 typedef enum {
   NONE,
   BFP,
+  RLE,
 } compression_options;
 
 class iq_conv {

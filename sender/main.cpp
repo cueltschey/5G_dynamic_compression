@@ -6,6 +6,7 @@
 #include "d_compression/zmq_channel.h"
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
+#include "d_compression/rle.h"
 #include "d_compression/iq_state_machine.h"
 #include "srsran/adt/complex.h"
 #include "srsran/adt/bf16.h"
@@ -40,7 +41,8 @@ int main(int argc, char** argv) {
     // Initialize socket and objects
     d_compression::zmq_channel zmqSender("tcp://*:5555", true);
     iq_conv converter;
-    bfp_compressor c;
+    bfp_compressor bfp;
+    rle_compressor rle;
     iq_state_machine state_machine(1);
 
     std::chrono::microseconds total_compress = static_cast<std::chrono::microseconds>(0);
@@ -74,11 +76,17 @@ int main(int argc, char** argv) {
       // Apply compression
       std::string compression_name = "None";
 
+      std::vector<uint8_t> intermediate;
       auto compression_start = std::chrono::high_resolution_clock::now();
       switch (state_machine.get_current_state()) {
         case BFP:
           compression_name = "Block Floating Point";
-          c.compress(iqSamples, buffer);
+          bfp.compress(iqSamples, buffer);
+          break;
+        case RLE:
+          compression_name = "Run Length Encoding";
+          rle.compress(buffer, intermediate);
+          buffer = intermediate;
           break;
         case NONE:
           break;
