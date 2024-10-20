@@ -34,9 +34,6 @@ int main(int argc, char** argv) {
     csv_file << "transmission_duration,average_compression_duration,";
     csv_file << "average_transmission_duration,average_both" << std::endl;
 
-    // Initialize video parameters
-    double fps = cap.get(cv::CAP_PROP_FPS);
-    double delay = 1e6 / fps;
 
 
     // Initialize socket and objects
@@ -54,7 +51,6 @@ int main(int argc, char** argv) {
     size_t blank_bytes = 0;
 
     while (true) {
-      auto loop_start = std::chrono::high_resolution_clock::now();
 
       // read frame
       cap >> frame;
@@ -144,13 +140,6 @@ int main(int argc, char** argv) {
 
       state_machine.update(frame_index, avg_compression, avg_transmit,
                            static_cast<long>(compression_time.count()), static_cast<long>(transmit_time.count()));
-
-      // Maintain frame rate
-      auto loop_end = std::chrono::high_resolution_clock::now();
-      auto loop_us = std::chrono::duration_cast<std::chrono::microseconds>(loop_end - loop_start);
-
-      std::chrono::microseconds sleep_time = std::chrono::microseconds(static_cast<int>(std::abs(delay - loop_us.count())));
-      std::this_thread::sleep_for(sleep_time);
     }
     return 0;
 }
