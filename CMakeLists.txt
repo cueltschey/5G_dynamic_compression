@@ -1,7 +1,22 @@
-cmake_minimum_required(VERSION 3.14)
-project(5G_dynamic_compression)
-
-find_package(OpenCV REQUIRED)
+#
+# Copyright 2021-2024 Software Radio Systems Limited
+#
+# This file is part of srsRAN
+#
+# srsRAN is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+#
+# srsRAN is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# A copy of the GNU Affero General Public License can be found in
+# the LICENSE file in the top-level directory of this distribution
+# and at http://www.gnu.org/licenses/.
+#
 
 ########################################################################
 # Prevent in-tree builds
@@ -10,9 +25,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message(FATAL_ERROR "Prevented in-tree build. This is bad practice.")
 endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 
+########################################################################
+# Project setup
+########################################################################
+cmake_minimum_required(VERSION 3.14)
+project(srsran)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(version) # sets version information
@@ -58,6 +79,7 @@ option(ENABLE_DPDK           "Enable DPDK"                              OFF)
 option(ENABLE_LIBNUMA        "Enable LibNUMA"                           OFF)
 option(ENABLE_EXPORT         "Enable PIC and export libraries"          OFF)
 option(ENABLE_TRX_DRIVER     "Enable Amarisoft TRX driver library"      OFF)
+option(ENABLE_PLUGINS        "Compile plugins in the plugin folder"     ON)
 option(BUILD_TESTS           "Compile tests"                            ON)
 option(ENABLE_GPROF          "Enable gprof"                             OFF)
 option(USE_PHY_TESTVECTORS   "Enable testvector PHY tests"              OFF)
@@ -71,7 +93,7 @@ set_property(CACHE ASSERT_LEVEL PROPERTY STRINGS AUTO MINIMAL NORMAL PARANOID)
 set(EXIT_TIMEOUT "AUTO" CACHE STRING "Timer to wait for a clean exit")
 
 if (ENABLE_WERROR)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
     # Disable gcc's maybe uninitialized analysis as it raises false positives
     if (CMAKE_COMPILER_IS_GNUCXX)
         include(CheckCXXCompilerFlag)
@@ -218,6 +240,44 @@ endif()
 # Find dependencies
 ########################################################################
 
+# Backward-cpp
+find_package(Backward)
+if(Backward_FOUND)
+    if(BACKWARD_HAS_EXTERNAL_LIBRARIES)
+        message(STATUS "Building with backward-cpp support")
+    else (BACKWARD_HAS_EXTERNAL_LIBRARIES)
+        message(STATUS "Backward-cpp found, but external libraries are missing.")
+    endif()
+endif()
+
+# Crypto
+find_package(MbedTLS REQUIRED)
+if (MBEDTLS_FOUND)
+    set(SEC_INCLUDE_DIRS "${MBEDTLS_INCLUDE_DIRS}")
+    if(BUILD_STATIC)
+        set(SEC_LIBRARIES "${MBEDTLS_STATIC_LIBRARIES}")
+    else(BUILD_STATIC)
+        set(SEC_LIBRARIES "${MBEDTLS_LIBRARIES}")
+    endif(BUILD_STATIC)
+else(MBEDTLS_FOUND)
+    message(FATAL_ERROR "mbedTLS is required to build ${CMAKE_PROJECT_NAME}")
+endif (MBEDTLS_FOUND)
+
+# FFTW
+if (ENABLE_FFTW)
+    find_package(FFTW3F)
+endif (ENABLE_FFTW)
+
+# Google Tests
+if (BUILD_TESTS)
+    find_package(GTest REQUIRED)
+
+    # Alias gtest_discover_tests increase discovery the timeout.
+    function(gtest_discover_tests)
+        _gtest_discover_tests(${ARGV} DISCOVERY_TIMEOUT 15)
+    endfunction()
+endif (BUILD_TESTS)
+
 # Threads
 find_package(Threads REQUIRED)
 
@@ -299,6 +359,34 @@ message(STATUS "TUNE value is ${MTUNE}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH} -mtune=${MTUNE}")
 
 ########################################################################
+# DU split setup
+########################################################################
+# Public variable to select the DU split.
+set(DU_SPLIT_TYPE "DYNAMIC" CACHE STRING "DU split type. Default value is 'DYNAMIC'. Allowed values: DYNAMIC, SPLIT_6, SPLIT_7_2, SPLIT_8")
+
+# Internal private booleans to represent the selected DU split type. Values auto-derived from DU_SPLIT_TYPE variable.
+set(DU_SPLIT_DYNAMIC OFF CACHE BOOL "DU dynamic split enabled boolean")
+set(DU_SPLIT_6 OFF CACHE BOOL "DU split 6 enabled boolean")
+set(DU_SPLIT_7_2 OFF CACHE BOOL "DU split 7.2 enabled boolean")
+set(DU_SPLIT_8 OFF CACHE BOOL "DU split 8 enabled boolean")
+
+if (DU_SPLIT_TYPE STREQUAL "DYNAMIC")
+    set(DU_SPLIT_DYNAMIC ON)
+elseif (DU_SPLIT_TYPE STREQUAL "SPLIT_6")
+    set(DU_SPLIT_6 ON)
+elseif (DU_SPLIT_TYPE STREQUAL "SPLIT_7_2")
+    set(DU_SPLIT_7_2 ON)
+elseif (DU_SPLIT_TYPE STREQUAL "SPLIT_8")
+    set(DU_SPLIT_8 ON)
+else ()
+    message(WARNING "DU split value '${DU_SPLIT_TYPE}' is not supported. Defaulting to 'DYNAMIC'")
+    set(DU_SPLIT_TYPE "DYNAMIC")
+    set(DU_SPLIT_DYNAMIC ON)
+endif ()
+
+message(STATUS "Selected DU split is '${DU_SPLIT_TYPE}'")
+
+########################################################################
 # Compiler launcher setup
 ########################################################################
 
@@ -328,8 +416,10 @@ include_directories(external)
 
 # List of directories that contain header files
 set(ALL_HEADER_DIRS
+  apps
   lib
   include
+  tests/unittests
 )
 set(ALL_HEADER_FILES "")
 foreach(TMP_DIR ${ALL_HEADER_DIRS})
@@ -338,17 +428,41 @@ foreach(TMP_DIR ${ALL_HEADER_DIRS})
 endforeach()
 add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 
-find_package(ZLIB REQUIRED)
-
 ########################################################################
 # Add the subdirectories
 ########################################################################
 
+add_subdirectory(apps)
+add_subdirectory(configs)
+add_subdirectory(docs)
 add_subdirectory(external)
 add_subdirectory(lib)
+add_subdirectory(utils)
 add_subdirectory(receiver)
 add_subdirectory(sender)
-add_subdirectory(tests)
+
+if (BUILD_TESTS)
+    add_subdirectory(tests/test_doubles)
+    add_subdirectory(tests/unittests)
+    add_subdirectory(tests/integrationtests)
+    add_subdirectory(tests/benchmarks)
+endif (BUILD_TESTS)
+
+if (ENABLE_PLUGINS)
+   # Discover all subdirectories in the plugin directory (but not recursively)
+   file(GLOB SUBDIRS RELATIVE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/plugins/*)
+   
+   # Loop through each plugin subdirectory
+   foreach(subdir ${SUBDIRS})
+       # Check if it's a directory and contains a CMakeLists.txt file
+       if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${subdir} AND EXISTS ${CMAKE_SOURCE_DIR}/${subdir}/CMakeLists.txt)
+           message(STATUS "Adding plugin: ${subdir}")
+           add_subdirectory(${subdir})
+       endif()
+   endforeach()
+endif ()
+
+
 
 ########################################################################
 # Export (selected) libraries
