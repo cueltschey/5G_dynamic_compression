@@ -11,6 +11,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(df['index'], df['average_transmission_duration'], marker='o', label='Avg Transmission Duration', color='blue')
 plt.plot(df['index'], df['average_compression_duration'], marker='o', label='Avg Compression Duration', color='orange')
 plt.plot(df['index'], df['average_both'], marker='o', label='Average Total Duration', color='green')
+plt.plot(df['index'], df['compression_type'] * 10000, marker='o', label='Average Total Duration', color='green')
 
 # Adding titles and labels
 plt.title('Average Durations and Their Sum')

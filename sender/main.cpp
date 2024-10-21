@@ -12,7 +12,6 @@ int main(int argc, char** argv) {
     std::string output_path = "./output.csv";
     std::string data_type = "video";
     std::string algo_type = "state_machine";
-    std::string channel_type = "zmq";
 
     for (int i = 1; i < argc; i += 2) {
       std::string arg = argv[i];
@@ -24,15 +23,13 @@ int main(int argc, char** argv) {
         data_type = argv[i + 1];
       } else if (arg == "--algorithm" || arg == "-a") {
         algo_type = argv[i + 1];
-      } else if (arg == "--channel" || arg == "-c") {
-        channel_type = argv[i + 1];
       } else {
         std::cerr << "Unknown argument: " << arg << std::endl;
         return -1;
       }
     }
 
-    d_compression::channel wireless_channel(channel_type, true);
+    d_compression::channel wireless_channel("10.45.1.2", 5201);
     d_compression::controller controller(algo_type, 1);
 
 

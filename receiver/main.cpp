@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>  // OpenCV for displaying video
 #include <vector>
 #include <cstring>
-#include "d_compression/zmq_channel.h"
+#include "d_compression/channel.h"
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
 #include "d_compression/rle.h"
@@ -12,14 +12,15 @@
 #include "srsran/adt/span.h"
 
 int main() {
-    d_compression::zmq_channel zmqReciever("tcp://localhost:5555", false);
+    //d_compression::zmq_channel wireless_channel("tcp://localhost:5555", false);
+    d_compression::channel wireless_channel("10.45.1.2", 5201, true);
     iq_conv converter;
 
     compression_options comp_type;
     size_t blank_bytes = 0;
 
     while (true) {
-        std::vector<uint8_t> buffer = zmqReciever.recv();
+        std::vector<uint8_t> buffer = wireless_channel.recv();
 
         // read and pop compression type
         comp_type = static_cast<compression_options>(buffer.front());
