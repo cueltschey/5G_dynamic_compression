@@ -120,7 +120,7 @@ int run_video(std::string data_path, std::string output_path,
       std::cout << "\tTotal Average: " << std::to_string(avg_both) << " microseconds" << std::endl;
 
       // Save data in CSV
-      csv_file << std::to_string(frame_index) << "," << compression_name << ",";
+      csv_file << std::to_string(frame_index) << "," << static_cast<int>(controller.get_current_state()) << ",";
       csv_file << compressed_buffer_len << "," << comp_ratio << ",";
       csv_file << std::to_string(compression_time.count()) << ",";
       csv_file << std::to_string(transmit_time.count()) << ",";
