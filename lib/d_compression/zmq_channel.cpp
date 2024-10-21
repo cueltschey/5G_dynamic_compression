@@ -1,8 +1,8 @@
 #include "d_compression/zmq_channel.h"
 
 namespace d_compression {
-  zmq_channel::zmq_channel(const std::string& address, bool is_sender)
-      : is_sender(is_sender), context(1), socket(context, is_sender ? ZMQ_PUB : ZMQ_SUB) {
+  zmq_channel::zmq_channel(const std::string& address, bool is_sender_)
+      : is_sender(is_sender_), context(1), socket(context, is_sender ? ZMQ_PUB : ZMQ_SUB) {
       try {
           if (is_sender) {
               socket.bind(address);
@@ -35,7 +35,10 @@ namespace d_compression {
           return {};
       }
       zmq::message_t msg;
-      socket.recv(msg, zmq::recv_flags::none);
+      zmq::send_result_t res = socket.recv(msg, zmq::recv_flags::none);
+      if(res != 0){
+        std::cerr << "ZMQ failed" << std::endl;
+      }
 
       std::vector<uint8_t> buffer(msg.size());
       std::memcpy(buffer.data(), msg.data(), msg.size());

@@ -29,7 +29,7 @@ std::vector<uint8_t> bfp_compressor::compress_prb_generic(const std::vector<srsr
     */
 
 
-  double scale_factor = static_cast<double>(255.0 / 1000);//max_value.real.value());
+  //double scale_factor = static_cast<double>(255.0 / 1000);//max_value.real.value());
 
   //out.push_back(static_cast<uint8_t>(scale_factor * 255));
 
