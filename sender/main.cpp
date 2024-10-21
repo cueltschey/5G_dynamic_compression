@@ -1,145 +1,45 @@
-#include <opencv2/opencv.hpp>
-#include <thread>
-#include <chrono>
-#include <cstring>
-#include <fstream>
-#include "d_compression/zmq_channel.h"
-#include "d_compression/iq.h"
-#include "d_compression/bfp.h"
-#include "d_compression/rle.h"
-#include "d_compression/lz77.h"
-#include "d_compression/iq_state_machine.h"
-#include "srsran/adt/complex.h"
-#include "srsran/adt/bf16.h"
-
+#include "d_compression/channel.h"
+#include "d_compression/controller.h"
+#include "video.cpp"
 
 int main(int argc, char** argv) {
 
-    // Open video file
-    if(argc < 2){
-      std::cerr << "Usage sender <mp4 path>" << std::endl;
+    if (argc % 2 != 1) {
+      std::cerr << "Usage: " << argv[0] << " --data <path> --output <path> --type <video|audio|text> --algorithm <type> --channel <type>" << std::endl;
       return -1;
-    }
-    std::string videoPath = argv[1];
-    cv::VideoCapture cap(videoPath);
-    if (!cap.isOpened()) {
-        std::cerr << "Error: Could not open video file!" << std::endl;
+    };
+    std::string data_path = "../rick.mp4";
+    std::string output_path = "./output.csv";
+    std::string data_type = "video";
+    std::string algo_type = "state_machine";
+    std::string channel_type = "zmq";
+
+    for (int i = 1; i < argc; i += 2) {
+      std::string arg = argv[i];
+      if (arg == "--data" || arg == "-d") {
+        data_path = argv[i + 1];
+      } else if (arg == "--output" || arg == "-o") {
+        output_path = argv[i + 1];
+      } else if (arg == "--type" || arg == "-t") {
+        data_type = argv[i + 1];
+      } else if (arg == "--algorithm" || arg == "-a") {
+        algo_type = argv[i + 1];
+      } else if (arg == "--channel" || arg == "-c") {
+        channel_type = argv[i + 1];
+      } else {
+        std::cerr << "Unknown argument: " << arg << std::endl;
         return -1;
-    }
-    cv::Mat frame;
-
-    // Open CSV data file
-    std::ofstream csv_file("./test.csv");
-    csv_file << "index,compression_type,byte_length,compression_ratio,compression_duration,";
-    csv_file << "transmission_duration,average_compression_duration,";
-    csv_file << "average_transmission_duration,average_both" << std::endl;
-
-
-
-    // Initialize socket and objects
-    d_compression::zmq_channel zmqSender("tcp://*:5555", true);
-    iq_conv converter;
-    bfp_compressor bfp;
-    rle_compressor rle;
-    lz77_compressor lz77;
-    iq_state_machine state_machine(1);
-
-    std::chrono::microseconds total_compress = static_cast<std::chrono::microseconds>(0);
-    std::chrono::microseconds total_transmit = static_cast<std::chrono::microseconds>(0);
-    std::chrono::microseconds total_both = static_cast<std::chrono::microseconds>(0);
-    int frame_index = 0;
-    size_t blank_bytes = 0;
-
-    while (true) {
-      // read frame
-      cap >> frame;
-      if (frame.empty()) {
-          std::cout << "End of video stream" << std::endl;
-          break;
       }
-
-      // Image byte buffer
-      std::vector<uint8_t> buffer;
-      cv::imencode(".jpg", frame, buffer);
-
-      // Convert to IQ
-      std::vector<srsran::cbf16_t> iqSamples;
-      blank_bytes = converter.to_iq(buffer, iqSamples);
-
-      frame_index++;
-      converter.serialize(iqSamples, buffer);
-      float uncompressed_buffer_len = static_cast<float>(buffer.size());
-
-      // Apply compression
-      std::string compression_name = "None";
-
-      std::vector<uint8_t> intermediate;
-      auto compression_start = std::chrono::high_resolution_clock::now();
-      switch (state_machine.get_current_state()) {
-        case BFP:
-          compression_name = "Block Floating Point";
-          bfp.compress(iqSamples, buffer);
-          break;
-        case RLE:
-          compression_name = "Run Length Encoding";
-          rle.compress(buffer, intermediate);
-          buffer = intermediate;
-          break;
-        case LZ77:
-          compression_name = "Lempel Ziv 77";
-          lz77.compress(buffer, intermediate);
-          buffer = intermediate;
-          break;
-        case NONE:
-          break;
-        default:
-          break;
-      }
-      auto compression_end = std::chrono::high_resolution_clock::now();
-
-      float compressed_buffer_len = static_cast<float>(buffer.size());
-
-      auto compression_time = std::chrono::duration_cast<std::chrono::microseconds>(compression_end - compression_start);
-
-      // Send compression type and blank_bytes
-      buffer.insert(buffer.begin(), static_cast<uint8_t>(blank_bytes));
-      buffer.insert(buffer.begin(), static_cast<uint8_t>(state_machine.get_current_state()));
-
-      // Transmit buffer
-      auto transmit_start = std::chrono::high_resolution_clock::now();
-      zmqSender.send(buffer);
-      auto transmit_end = std::chrono::high_resolution_clock::now();
-      auto transmit_time = std::chrono::duration_cast<std::chrono::microseconds>(transmit_end - transmit_start);
-
-      total_transmit = std::chrono::duration_cast<std::chrono::microseconds>(total_transmit + transmit_time);
-      total_compress = std::chrono::duration_cast<std::chrono::microseconds>(total_compress + compression_time);
-      total_both = std::chrono::duration_cast<std::chrono::microseconds>(total_both + compression_time + transmit_time);
-      long avg_transmit = static_cast<long>(total_transmit.count() / frame_index);
-      long avg_compression = static_cast<long>(total_compress.count() / frame_index);
-      long avg_both = static_cast<long>(total_both.count() / frame_index);
-      double comp_ratio = static_cast<double>(compressed_buffer_len / uncompressed_buffer_len);
-
-      std::cout << "Sending with compression -> " << compression_name << std::endl;
-      std::cout << "\tFrame size: " << compressed_buffer_len << std::endl;
-      std::cout << "\tCompression ratio: " << (comp_ratio) * 100 << "%" << std::endl;
-      std::cout << "\tCompression duration: " << std::to_string(compression_time.count()) << " microseconds" << std::endl;
-      std::cout << "\tTransmission duration: " << std::to_string(transmit_time.count()) << " microseconds" << std::endl;
-      std::cout << "\tCompression average: " << std::to_string(avg_compression) << " microseconds" << std::endl;
-      std::cout << "\tTotal Average: " << std::to_string(avg_both) << " microseconds" << std::endl;
-
-      // Save data in CSV
-      csv_file << std::to_string(frame_index) << "," << compression_name << ",";
-      csv_file << compressed_buffer_len << "," << comp_ratio << ",";
-      csv_file << std::to_string(compression_time.count()) << ",";
-      csv_file << std::to_string(transmit_time.count()) << ",";
-      csv_file << std::to_string(avg_compression) << ",";
-      csv_file << std::to_string(avg_transmit) << ",";
-      csv_file << std::to_string(avg_both) << std::endl;
-
-
-      state_machine.update(frame_index, avg_compression, avg_transmit,
-                           static_cast<long>(compression_time.count()), static_cast<long>(transmit_time.count()));
     }
+
+    d_compression::channel wireless_channel(channel_type, true);
+    d_compression::controller controller(algo_type, 1);
+
+
+    if(data_type == "video"){
+      return run_video(data_path, output_path, wireless_channel, controller);
+    }
+
     return 0;
 }
 
