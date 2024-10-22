@@ -33,7 +33,11 @@ project(srsran)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+
+set(TORCH_DIR "/usr/lib/libtorch")
+find_package(Torch REQUIRED PATHS ${TORCH_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ") #${TORCH_CXX_FLAGS}")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(version) # sets version information
@@ -410,6 +414,7 @@ include_directories(include)
 include_directories(external/fmt/include)
 include_directories(external)
 
+
 ########################################################################
 # Add headers to cmake project (useful for IDEs)
 ########################################################################
@@ -430,6 +435,8 @@ add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 
 find_package(ZLIB REQUIRED)
 find_package(OpenCV REQUIRED)
+
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 
 ########################################################################

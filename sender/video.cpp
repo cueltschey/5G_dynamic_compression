@@ -1,7 +1,7 @@
 #include <chrono>
 #include <fstream>
-#include <opencv2/opencv.hpp>
 #include <cstring>
+#include <opencv2/opencv.hpp>
 
 #include "d_compression/channel.h"
 #include "d_compression/controller.h"

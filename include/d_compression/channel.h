@@ -4,7 +4,7 @@
 #include "d_compression/zmq_channel.h"
 #include <iostream>
 #include <vector>
-#include <cstring>    // For memset and memcpy
+#include <cstring>
 #include <string>
 #include <sys/socket.h>
 #include <arpa/inet.h>

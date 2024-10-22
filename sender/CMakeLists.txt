@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+Project(Sender)
 
 add_executable(sender main.cpp)
 

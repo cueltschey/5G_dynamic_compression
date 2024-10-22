@@ -1,6 +1,5 @@
 #include <zmq.hpp>
 #include <iostream>
-#include <opencv2/opencv.hpp>  // OpenCV for displaying video
 #include <vector>
 #include <cstring>
 #include "d_compression/channel.h"
@@ -12,7 +11,6 @@
 #include "srsran/adt/span.h"
 
 int main() {
-    //d_compression::zmq_channel wireless_channel("tcp://localhost:5555", false);
     d_compression::channel wireless_channel("10.45.1.2", 5201, true);
     iq_conv converter;
 

@@ -1,6 +1,7 @@
 #include "d_compression/channel.h"
 #include "d_compression/controller.h"
 #include "video.cpp"
+#include <opencv2/opencv.hpp>
 
 int main(int argc, char** argv) {
 
@@ -28,7 +29,6 @@ int main(int argc, char** argv) {
         return -1;
       }
     }
-
     d_compression::channel wireless_channel("10.45.1.2", 5201);
     d_compression::controller controller(algo_type, 1);
 

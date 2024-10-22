@@ -76,10 +76,12 @@ private:
 
 class dqn_agent {
 public:
-  dqn_agent(int state_size_ = 1000, int action_size_ = 4, float lr_ = 1e-3, int memory_capacity_ = 2000) :
+  dqn_agent(int state_size_ = 200, int action_size_ = 4, float lr_ = 1e-3, int memory_capacity_ = 2000) :
   state_size(state_size_), action_size(action_size_), lr(lr_), memory_capacity(memory_capacity_),
-  env(state_size), dqn(state_size, action_size), optimizer(dqn.parameters(), lr), replay_buffer(memory_capacity);
-  void train();
+  env(state_size), dqn(state_size, action_size), optimizer(dqn.parameters(), lr), replay_buffer(memory_capacity),
+  entropy_state(state_size, 0.0f), packet_len_state(state_size, 0.0f){};
+  void step(float shannon_entropy, float packet_size, float current_duration);
+  compression_options get_compression_type() { return current_compression; }
 
 private:
   int state_size;
@@ -90,8 +92,16 @@ private:
   DQN dqn;
   torch::optim::Adam optimizer;
   ReplayBuffer replay_buffer;
+  std::vector<float> entropy_state;
+  std::vector<float> packet_len_state;
   float gamma = 0.99;
-  int batch_size = 32;
+  long unsigned int batch_size = 32;
+  float total_reward = 0.0;
+  int episode = 0;
+  std::vector<float> state;
+  float reward = 0.0f;
+  float old_duration = 0;
+  compression_options current_compression = compression_options::NONE;
 };
 
 #endif // !DQN_H

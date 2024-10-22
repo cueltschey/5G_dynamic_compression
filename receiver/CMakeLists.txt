@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.10)
 project(Receiver)
 
 add_executable(receiver main.cpp)

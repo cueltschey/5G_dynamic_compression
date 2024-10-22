@@ -6,6 +6,7 @@
 #include <memory>
 #include "d_compression/iq.h"
 #include "d_compression/iq_state_machine.h"
+#include "d_compression/dqn.h"
 
 namespace d_compression {
   class controller {
