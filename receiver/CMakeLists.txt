@@ -2,4 +2,4 @@ project(Receiver)
 
 add_executable(receiver main.cpp)
 
-target_link_libraries(receiver PRIVATE zmq ${OpenCV_LIBS} d_compression)
+target_link_libraries(receiver PRIVATE d_compression)

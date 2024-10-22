@@ -81,7 +81,7 @@ public:
   env(state_size), dqn(state_size, action_size), optimizer(dqn.parameters(), lr), replay_buffer(memory_capacity),
   entropy_state(state_size, 0.0f), packet_len_state(state_size, 0.0f){};
   void step(float shannon_entropy, float packet_size, float current_duration);
-  compression_options get_compression_type() { return current_compression; }
+  compression_options get_current_state() { return current_compression; }
 
 private:
   int state_size;

@@ -57,21 +57,7 @@ int main() {
             converter.from_iq(iqSamples, buffer, blank_bytes);
             break;
           default:
-            break;
-        }
-
-        cv::Mat frame = cv::imdecode(buffer, cv::IMREAD_COLOR);
-
-        if (frame.empty()) {
-            std::cerr << "Error: Received frame of size: " << frame.size() << std::endl;
-            break;
-        }
-
-        // Display the frame in a window
-        cv::imshow("Received Video", frame);
-
-        // Exit if the user presses the 'q' key
-        if (cv::waitKey(1) == 'q') {
+            std::cout << "Bad compression type -> " << buffer.size() << std::endl;
             break;
         }
     }

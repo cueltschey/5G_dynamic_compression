@@ -15,15 +15,21 @@ namespace d_compression {
       : algorithm_type(algorithm_type_), interval(interval_), 
       state_machine(std::make_unique<iq_state_machine>(interval))
     { }
-    void update(int frame_index, long avg_compression, long avg_transmission, long current_compression, long current_transmission){
+    void update(int frame_index, long avg_compression,
+        long avg_transmission, long current_compression,
+        long current_transmission, float shannon_entropy, float packet_size){
       if (algorithm_type == "state_machine") {
         state_machine->update(frame_index, avg_compression, avg_transmission, current_compression, current_transmission);
+      } else if (algorithm_type == "dqn") {
+        dqn->step(shannon_entropy, packet_size, static_cast<float>(current_compression + current_transmission));
       }
     };
 
     compression_options get_current_state() const { 
       if (algorithm_type == "state_machine") {
         return state_machine->get_current_state();
+      } else if (algorithm_type == "dqn") {
+        dqn->get_current_state();
       }
       return compression_options::NONE;
     }
@@ -31,6 +37,7 @@ namespace d_compression {
       std::string algorithm_type;
       int interval;
       std::unique_ptr<iq_state_machine> state_machine;
+      std::unique_ptr<dqn_agent> dqn;
   };
 }
 

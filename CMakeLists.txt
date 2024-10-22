@@ -34,10 +34,7 @@ project(srsran)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-set(TORCH_DIR "/usr/lib/libtorch")
-find_package(Torch REQUIRED PATHS ${TORCH_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ") #${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(version) # sets version information
@@ -97,7 +94,7 @@ set_property(CACHE ASSERT_LEVEL PROPERTY STRINGS AUTO MINIMAL NORMAL PARANOID)
 set(EXIT_TIMEOUT "AUTO" CACHE STRING "Timer to wait for a clean exit")
 
 if (ENABLE_WERROR)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ") #-Werror")
     # Disable gcc's maybe uninitialized analysis as it raises false positives
     if (CMAKE_COMPILER_IS_GNUCXX)
         include(CheckCXXCompilerFlag)
@@ -414,7 +411,6 @@ include_directories(include)
 include_directories(external/fmt/include)
 include_directories(external)
 
-
 ########################################################################
 # Add headers to cmake project (useful for IDEs)
 ########################################################################
@@ -434,23 +430,23 @@ endforeach()
 add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 
 find_package(ZLIB REQUIRED)
-find_package(OpenCV REQUIRED)
+list(APPEND CMAKE_PREFIX_PATH "libtorch")
+find_package(Torch REQUIRED)
 
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 
 ########################################################################
 # Add the subdirectories
 ########################################################################
 
+add_subdirectory(receiver)
+add_subdirectory(sender)
 add_subdirectory(apps)
 add_subdirectory(configs)
 add_subdirectory(docs)
 add_subdirectory(external)
 add_subdirectory(lib)
 add_subdirectory(utils)
-add_subdirectory(receiver)
-add_subdirectory(sender)
 
 if (BUILD_TESTS)
     add_subdirectory(tests/test_doubles)

@@ -1,3 +1,4 @@
+#include <torch/torch.h>
 #include "d_compression/iq.h"
 #include "d_compression/dqn.h"
 
