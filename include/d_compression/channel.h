@@ -63,65 +63,69 @@ namespace d_compression {
             }
         }
 
-        // Send data through the socket in chunks
-        size_t send(const std::vector<uint8_t>& buffer) {
-            // Send the size of the data as a 4-byte header
-            uint32_t data_size = buffer.size();
-            uint32_t data_size_net = htonl(data_size); // Convert to network byte order
-            ssize_t sent_bytes = ::send(sockfd, &data_size_net, sizeof(data_size_net), 0);
-            if (sent_bytes != sizeof(data_size_net)) {
-                throw std::runtime_error("Failed to send data size");
-            }
-
+        ssize_t send_all(const void* data, size_t length) {
+            const uint8_t* data_ptr = static_cast<const uint8_t*>(data);
             size_t total_sent = 0;
-            const size_t chunk_size = 1024;
-
-            // Send the data in 1024-byte chunks
-            while (total_sent < buffer.size()) {
-                size_t remaining = buffer.size() - total_sent;
-                size_t to_send = std::min(chunk_size, remaining);
-
-                sent_bytes = ::send(sockfd, buffer.data() + total_sent, to_send, 0);
-                if (sent_bytes <= 0) {
-                    throw std::runtime_error("Failed to send data");
+            while (total_sent < length) {
+                ssize_t sent_bytes = ::send(sockfd, data_ptr + total_sent, length - total_sent, 0);
+                if (sent_bytes < 0) {
+                    return -1; // Indicate error
                 }
                 total_sent += sent_bytes;
             }
-
             return total_sent;
         }
 
-        // Receive data from the socket in chunks
-        std::vector<uint8_t> recv() {
-            // First, read the size of the incoming data (4 bytes)
-            uint32_t data_size_net = 0;
-            ssize_t received_bytes = ::recv(sockfd, &data_size_net, sizeof(data_size_net), 0);
-            if (received_bytes != sizeof(data_size_net)) {
-                throw std::runtime_error("Failed to receive data size");
+        size_t send(const std::vector<uint8_t>& buffer) {
+            uint32_t data_size = buffer.size();
+            uint32_t data_size_net = htonl(data_size);
+
+            // Send the data size
+            if (send_all(&data_size_net, sizeof(data_size_net)) != sizeof(data_size_net)) {
+                throw std::runtime_error("Failed to send data size");
             }
-            uint32_t data_size = ntohl(data_size_net); // Convert from network byte order
 
-            std::vector<uint8_t> buffer(data_size);
+            // Send the actual data
+            if (send_all(buffer.data(), buffer.size()) != buffer.size()) {
+                throw std::runtime_error("Failed to send data");
+            }
+
+            return buffer.size();
+        }
+
+
+        ssize_t recv_all(void* buffer, size_t length) {
+            uint8_t* buffer_ptr = static_cast<uint8_t*>(buffer);
             size_t total_received = 0;
-            const size_t chunk_size = 1024;
-
-            // Receive the data in 1024-byte chunks
-            while (total_received < data_size) {
-                size_t remaining = data_size - total_received;
-                size_t to_receive = std::min(chunk_size, remaining);
-
-                received_bytes = ::recv(sockfd, buffer.data() + total_received, to_receive, 0);
+            while (total_received < length) {
+                ssize_t received_bytes = ::recv(sockfd, buffer_ptr + total_received, length - total_received, 0);
                 if (received_bytes <= 0) {
-                    throw std::runtime_error("Failed to receive data");
+                    return -1; // Indicate error or connection closed
                 }
                 total_received += received_bytes;
             }
-
-            return buffer;
+            return total_received;
         }
 
-        ~channel() {
-            close_socket();
+        std::vector<uint8_t> recv() {
+            uint32_t data_size_net = 0;
+
+            // Receive the size of the incoming data
+            ssize_t received_bytes = recv_all(&data_size_net, sizeof(data_size_net));
+            if (received_bytes != sizeof(data_size_net)) {
+               std::cerr << "Error: received " << received_bytes << " bytes instead of 4." << std::endl;
+                throw std::runtime_error("Failed to receive data size");
+            }
+            uint32_t data_size = ntohl(data_size_net);
+            std::cerr << "Data size to be received: " << data_size << std::endl;
+
+            // Allocate buffer and receive the data
+            std::vector<uint8_t> buffer(data_size);
+            if (recv_all(buffer.data(), data_size) != data_size) {
+                throw std::runtime_error("Failed to receive data");
+            }
+
+            return buffer;
         }
 
     private:

@@ -19,7 +19,7 @@ std::vector<uint8_t> read_image_from_stdin() {
   std::vector<uint8_t> buffer;
   uint8_t byte;
   int index = 0;
-  while (std::cin >> std::noskipws >> byte && index < 10000) {
+  while (std::cin >> std::noskipws >> byte && index < 20240) {
     buffer.push_back(byte);
     index++;
   }
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
       long avg_both = static_cast<long>(total_both.count() / frame_index);
       double comp_ratio = static_cast<double>(compressed_buffer_len / uncompressed_buffer_len);
 
-      std::cout << "Sending with compression -> " << compression_name << std::endl;
+      std::cout << frame_index << " Sending with compression -> " << compression_name << std::endl;
       std::cout << "\tFrame size: " << compressed_buffer_len << std::endl;
       std::cout << "\tCompression ratio: " << (comp_ratio) * 100 << "%" << std::endl;
       std::cout << "\tCompression duration: " << compression_time.count() << " microseconds" << std::endl;
