@@ -432,6 +432,8 @@ add_custom_target(all_srsran_headers SOURCES ${ALL_HEADER_FILES})
 find_package(ZLIB REQUIRED)
 list(APPEND CMAKE_PREFIX_PATH "libtorch")
 find_package(Torch REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+
 
 
 

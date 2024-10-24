@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstring>
 #include <fstream>
+#include <algorithm>
 #include "d_compression/channel.h"
 #include "d_compression/iq.h"
 #include "d_compression/bfp.h"
@@ -14,7 +15,7 @@
 int main() {
     d_compression::channel wireless_channel("10.45.1.2", 5201, true);
     iq_conv converter;
-    std::ofstream vid_file("out.mp4");
+    std::ofstream vid_file("out.mp4", std::ios::binary);
 
 
     compression_options comp_type;
@@ -22,6 +23,9 @@ int main() {
 
     while (true) {
         std::vector<uint8_t> buffer = wireless_channel.recv();
+        if(buffer.size() == 1 && buffer[0] == 0){
+          break;
+        }
 
         // Read and pop compression type
         comp_type = static_cast<compression_options>(buffer.front());
@@ -62,7 +66,7 @@ int main() {
                 break;
             default:
                 std::cout << "Bad compression type -> " << buffer.size() << std::endl;
-                continue; // Skip to the next iteration
+                break;
         }
 
         for(const uint8_t val : buffer){

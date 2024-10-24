@@ -15,14 +15,13 @@
 #include "srsran/adt/bf16.h"
 
 
-std::vector<uint8_t> read_image_from_stdin() {
-  std::vector<uint8_t> buffer;
-  uint8_t byte;
-  int index = 0;
-  while (std::cin >> std::noskipws >> byte && index < 20240) {
-    buffer.push_back(byte);
-    index++;
-  }
+std::vector<uint8_t> read_image_from_stdin(size_t max_size = 20240) {
+  std::vector<uint8_t> buffer(max_size);
+
+  std::cin.read(reinterpret_cast<char*>(buffer.data()), max_size);
+
+  buffer.resize(std::cin.gcount());
+
   return buffer;
 }
 
@@ -65,6 +64,7 @@ int main(int argc, char** argv) {
       // Image byte buffer
       std::vector<uint8_t> buffer = read_image_from_stdin();
       if(buffer.empty()){
+        wireless_channel.send(std::vector<uint8_t>{0});
         break;
       }
 

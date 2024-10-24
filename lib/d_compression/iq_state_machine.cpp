@@ -26,5 +26,5 @@ compression_options iq_state_machine::select_state(long compression, long transm
   }
   bfp_efficiency = static_cast<double>((total_bfp_time / bfp_count) - (total_none_time / none_count));
   //return bfp_efficiency >= 0? compression_options::NONE : compression_options::BFP;
-  return compression_options::NONE;
+  return compression_options::BFP;
 }
