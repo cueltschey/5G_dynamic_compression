@@ -13,7 +13,7 @@ namespace d_compression {
   public:
     controller(std::string algorithm_type_, int interval_ = 10) 
       : algorithm_type(algorithm_type_), interval(interval_), 
-      state_machine(std::make_unique<iq_state_machine>(interval))
+      state_machine(std::make_unique<iq_state_machine>(interval)), dqn(std::make_unique<dqn_agent>())
     { }
     void update(int frame_index, long avg_compression,
         long avg_transmission, long current_compression,
@@ -29,7 +29,7 @@ namespace d_compression {
       if (algorithm_type == "state_machine") {
         return state_machine->get_current_state();
       } else if (algorithm_type == "dqn") {
-        dqn->get_current_state();
+        return dqn->get_current_state();
       }
       return compression_options::NONE;
     }

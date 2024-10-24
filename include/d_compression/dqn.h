@@ -11,12 +11,18 @@ struct DQN : torch::nn::Module {
   torch::nn::Linear fc1{nullptr}, fc2{nullptr}, fc3{nullptr};
 
   DQN(int state_size, int action_size) {
-    fc1 = register_module("fc1", torch::nn::Linear(state_size, 128));
+    fc1 = register_module("fc1", torch::nn::Linear(state_size * 2, 128));
     fc2 = register_module("fc2", torch::nn::Linear(128, 64));
     fc3 = register_module("fc3", torch::nn::Linear(64, action_size));
   }
 
   torch::Tensor forward(torch::Tensor x) {
+    std::cout << "Input tensor size: " << x.sizes() << std::endl; // Debugging line
+
+    if (x.dim() == 3) {
+      x = x.view({x.size(0), x.size(2)}); // Flatten to shape [N, 400]
+    }
+
     x = torch::relu(fc1(x));
     x = torch::relu(fc2(x));
     return fc3(x);
@@ -77,9 +83,26 @@ private:
 class dqn_agent {
 public:
   dqn_agent(int state_size_ = 200, int action_size_ = 4, float lr_ = 1e-3, int memory_capacity_ = 2000) :
-  state_size(state_size_), action_size(action_size_), lr(lr_), memory_capacity(memory_capacity_),
-  env(state_size), dqn(state_size, action_size), optimizer(dqn.parameters(), lr), replay_buffer(memory_capacity),
-  entropy_state(state_size, 0.0f), packet_len_state(state_size, 0.0f){};
+    state_size(state_size_), 
+    action_size(action_size_), 
+    lr(lr_), 
+    memory_capacity(memory_capacity_),
+    env(state_size), 
+    dqn(state_size, action_size), 
+    optimizer(dqn.parameters(), lr), 
+    replay_buffer(memory_capacity),
+    entropy_state(state_size, 0.0f), 
+    packet_len_state(state_size, 0.0f), 
+    gamma(0.99), 
+    batch_size(32), 
+    total_reward(0.0f),
+    episode(0),
+    reward(0.0f),
+    old_duration(0.0f),
+    current_compression(compression_options::NONE),
+    state(state_size, 0.0f)
+  {}
+  
   void step(float shannon_entropy, float packet_size, float current_duration);
   compression_options get_current_state() { return current_compression; }
 
@@ -94,14 +117,13 @@ private:
   ReplayBuffer replay_buffer;
   std::vector<float> entropy_state;
   std::vector<float> packet_len_state;
-  float gamma = 0.99;
-  long unsigned int batch_size = 32;
-  float total_reward = 0.0;
-  int episode = 0;
+  float gamma;
+  long unsigned int batch_size;
+  float total_reward;
+  int episode;
+  float reward;
+  float old_duration;
+  compression_options current_compression;
   std::vector<float> state;
-  float reward = 0.0f;
-  float old_duration = 0;
-  compression_options current_compression = compression_options::NONE;
 };
-
 #endif // !DQN_H
