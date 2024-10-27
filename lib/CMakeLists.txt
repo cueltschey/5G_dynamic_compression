@@ -21,6 +21,7 @@
 add_subdirectory(asn1)
 add_subdirectory(cu_cp)
 add_subdirectory(cu_up)
+add_subdirectory(dqn)
 add_subdirectory(du)
 add_subdirectory(e1ap)
 add_subdirectory(e2)

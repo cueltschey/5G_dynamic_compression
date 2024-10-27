@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
       controller.update(frame_index, avg_compression, avg_transmit,
                         static_cast<long>(compression_time.count()),
                         static_cast<long>(transmit_time.count()),
-                        0.0f, compressed_buffer_len);
+                        0.0f, compressed_buffer_len, uncompressed_buffer_len < 20240);
   }
   return 0;
 }
