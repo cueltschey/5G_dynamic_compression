@@ -13,10 +13,10 @@ Trainer::Trainer():
         network(3, 4),
         target_network(3, 4),
         dqn_optimizer(
-            network.parameters(), torch::optim::AdamOptions(0.0001).beta1(0.5)),
-        all_rewards(), entropy_state(), size_state(), duration_state() {}
+            network.parameters(), 1e-3)
+        {}
 
-    torch::Tensor Trainer::compute_td_loss(int64_t batch_size, float gamma){
+    torch::Tensor Trainer::compute_td_loss(){
         std::vector<std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>> batch =
                 buffer.sample_queue(batch_size);
 
@@ -26,12 +26,12 @@ Trainer::Trainer():
         std::vector<torch::Tensor> rewards;
         std::vector<torch::Tensor> dones;
 
-        for (auto i : batch){
-            states.push_back(std::get<0>(i));
-            new_states.push_back(std::get<1>(i));
-            actions.push_back(std::get<2>(i));
-            rewards.push_back(std::get<3>(i));
-            dones.push_back(std::get<4>(i));
+        for (auto& i : batch){
+            states.push_back(std::get<0>(i).unsqueeze(0));
+            new_states.push_back(std::get<1>(i).unsqueeze(0));
+            actions.push_back(std::get<2>(i).unsqueeze(0));
+            rewards.push_back(std::get<3>(i).unsqueeze(0));
+            dones.push_back(std::get<4>(i).unsqueeze(0));
         }
 
 
@@ -52,7 +52,8 @@ Trainer::Trainer():
         torch::Tensor next_target_q_values = target_network.forward(new_states_tensor);
         torch::Tensor next_q_values = network.forward(new_states_tensor);
 
-        actions_tensor = actions_tensor.to(torch::kInt64);
+        actions_tensor = actions_tensor.clone().detach().to(torch::kFloat).requires_grad_(true);
+
 
         torch::Tensor q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1);
         torch::Tensor maximum = std::get<1>(next_q_values.max(1));
@@ -60,12 +61,16 @@ Trainer::Trainer():
         torch::Tensor expected_q_value = rewards_tensor + gamma*next_q_value*(1-dones_tensor);
         torch::Tensor loss = torch::mse_loss(q_value, expected_q_value);
 
+        for (auto& param : network.parameters()) {
+            param.set_requires_grad(true);
+        }
+        std::cout << "HERE" << std::endl;
+
         dqn_optimizer.zero_grad();
         loss.backward();
         dqn_optimizer.step();
 
         return loss;
-
     }
 
 
@@ -73,10 +78,6 @@ Trainer::Trainer():
         return epsilon_final + (epsilon_start - epsilon_final) * exp(-1. * frame_id / epsilon_decay);
     }
 
-    torch::Tensor Trainer::get_tensor_observation(std::vector<int64_t> state) {
-        torch::Tensor state_tensor = torch::from_blob(state.data(), {1, 3, 210, 160});
-        return state_tensor;
-    }
 
     void Trainer::loadstatedict(torch::nn::Module& model,
                        torch::nn::Module& target_model) {
@@ -98,58 +99,53 @@ Trainer::Trainer():
         }
     }
 
-  void Trainer::train(int64_t entropy, int16_t packet_size, int64_t duration, bool done){
-
+  void Trainer::train(float entropy, float packet_size, float duration, bool done){
 
     float reward = duration - old_duration;
     old_duration = duration;
     episode_reward += reward;
-    std::vector<int16_t> new_state = state;
-    new_state.push_back(entropy);
-    new_state.push_back(packet_size);
 
-    torch::Tensor new_state_tensor = get_tensor_observation(new_state);
+    torch::Tensor new_state_tensor = torch::tensor({entropy, packet_size, duration}, torch::kFloat);
 
-    torch::Tensor reward_tensor = torch::tensor(reward);
-    torch::Tensor done_tensor = torch::tensor(done);
-    done_tensor = done_tensor.to(torch::kFloat32);
-    torch::Tensor action_tensor_new = torch::tensor(a);
-
-    buffer.push(state_tensor, new_state_tensor, action_tensor_new, done_tensor, reward_tensor);
-    state = new_state;
-
-    if (done){
-        state = std::vector<int64_t>();
-        all_rewards.push_back(episode_reward);
-        episode_reward = 0.0;
-    }
-
-    if (buffer.size_buffer() >= 10000){
-        torch::Tensor loss = compute_td_loss(batch_size, gamma);
-        losses.push_back(loss);
-    }
-
-    if (episode%1000==0){
-        std::cout<<episode_reward<<std::endl;
-        loadstatedict(network, target_network);
-        episode = 0;
-    }
 
     episode++;
     double epsilon = epsilon_by_frame(episode);
     auto r = ((double) rand() / (RAND_MAX));
-    torch::Tensor state_tensor = get_tensor_observation(state);
     if (r <= epsilon){
         a = legal_actions[rand() % legal_actions.size()];
     }
     else{
-        torch::Tensor action_tensor = network.act(state_tensor);
-        int64_t index = action_tensor[0].item<int64_t>();
+        torch::Tensor action_tensor = network.act(new_state_tensor);
+        int64_t index = action_tensor.item<int64_t>();
         a = legal_actions[index];
     }
 
+    torch::Tensor done_tensor = torch::tensor(done);
+    done_tensor = done_tensor.to(torch::kFloat32);
+    torch::Tensor action_tensor_new = torch::tensor(a);
+
+
+    torch::Tensor reward_tensor = torch::tensor(reward);
+    done_tensor = reward_tensor.to(torch::kFloat32);
+
+    buffer.push(state_tensor, new_state_tensor, action_tensor_new, done_tensor, reward_tensor);
+    state_tensor = new_state_tensor;
+
+    if (done){
+      std::cout << "Image sent, congratulations!" << std::endl;
+    }
+
+    if (episode%1000==0){
+        compute_td_loss();
+        std::cout<<episode_reward<<std::endl;
+        loadstatedict(network, target_network);
+        episode = 0;
+        episode_reward = 0.0;
+    }
+
+
   }
 
-compression_options get_current_state(){
-  return static_cast<compression_options>(a);
+compression_options Trainer::get_current_state(){
+  return a;
 }

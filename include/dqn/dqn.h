@@ -21,6 +21,9 @@ struct DQN : torch::nn::Module{
     }
 
     torch::Tensor act(torch::Tensor state){
+        if (state.dim() == 1) {
+            state = state.unsqueeze(0); // Convert (3,) to (1, 3)
+        }
         torch::Tensor q_value = forward(state);
         torch::Tensor action = std::get<1>(q_value.max(1));
         return action;

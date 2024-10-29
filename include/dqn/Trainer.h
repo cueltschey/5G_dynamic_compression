@@ -22,7 +22,8 @@ class Trainer{
     private: int64_t batch_size = 32;
     private: float gamma = 0.99;
     float episode_reward = 0.0;
-    int16_t old_duration = 0;
+    float old_duration = 0;
+    int episode = 0;
     compression_options a = compression_options::NONE;
 
     std::vector<compression_options> legal_actions = {
@@ -32,20 +33,15 @@ class Trainer{
       compression_options::RLE
     };
 
+    torch::Tensor state_tensor = torch::tensor({0.0,0.0,0.0}, torch::kFloat);
 
-    std::vector<float> all_rewards;
-    std::vector<int64_t> entropy_state;
-    std::vector<int64_t> size_state;
-    std::vector<int64_t> duration_state;
-    std::vector<torch::Tensor> losses;
 
     public:
         Trainer();
-        torch::Tensor compute_td_loss(int64_t batch_size, float gamma);
+        torch::Tensor compute_td_loss();
         double epsilon_by_frame(int64_t frame_id);
-        torch::Tensor get_tensor_observation(std::vector<int64_t> state);
         void loadstatedict(torch::nn::Module& model,
                            torch::nn::Module& target_model);
-        void train(int64_t random_seed, int64_t packet_size, int64_t duration, bool done);
+        void train(float entropy, float packet_size, float duration, bool done);
         compression_options get_current_state();
 };
