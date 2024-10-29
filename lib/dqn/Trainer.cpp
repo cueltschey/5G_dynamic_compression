@@ -11,10 +11,12 @@
 Trainer::Trainer():
         buffer(3000),
         network(3, 4),
-        target_network(3, 4),
+        target_network(3, 4), csv_file(output_path),
         dqn_optimizer(
             network.parameters(), 1e-3)
-        {}
+        {
+          csv_file << "episode,reward,action,epsilon,total_duration" << std::endl;
+        }
 
     torch::Tensor Trainer::compute_td_loss(){
         std::vector<std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>> batch =
@@ -52,9 +54,6 @@ Trainer::Trainer():
         torch::Tensor next_target_q_values = target_network.forward(new_states_tensor);
         torch::Tensor next_q_values = network.forward(new_states_tensor);
 
-        actions_tensor = actions_tensor.clone().detach().to(torch::kFloat).requires_grad_(true);
-
-
         torch::Tensor q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1);
         torch::Tensor maximum = std::get<1>(next_q_values.max(1));
         torch::Tensor next_q_value = next_target_q_values.gather(1, maximum.unsqueeze(1)).squeeze(1);
@@ -64,10 +63,15 @@ Trainer::Trainer():
         for (auto& param : network.parameters()) {
             param.set_requires_grad(true);
         }
-        std::cout << "HERE" << std::endl;
 
         dqn_optimizer.zero_grad();
-        loss.backward();
+        try {
+          std::cout << "q_value requires grad: " << q_value.requires_grad() << std::endl;
+          std::cout << "expected_q_value requires grad: " << expected_q_value.requires_grad() << std::endl;
+          loss.backward();
+        } catch (const c10::Error& e) {
+          std::cerr << "backward failed: " << e.what() << std::endl;
+        }
         dqn_optimizer.step();
 
         return loss;
@@ -105,7 +109,7 @@ Trainer::Trainer():
     old_duration = duration;
     episode_reward += reward;
 
-    torch::Tensor new_state_tensor = torch::tensor({entropy, packet_size, duration}, torch::kFloat);
+    torch::Tensor new_state_tensor = torch::tensor({entropy, packet_size, duration}, torch::kFloat).requires_grad_(true);
 
 
     episode++;
@@ -120,26 +124,22 @@ Trainer::Trainer():
         a = legal_actions[index];
     }
 
-    torch::Tensor done_tensor = torch::tensor(done);
-    done_tensor = done_tensor.to(torch::kFloat32);
+    torch::Tensor reward_tensor = torch::tensor(reward).to(torch::kFloat32);
+    torch::Tensor done_tensor = done ? torch::ones({1}, torch::kFloat32) : torch::zeros({1}, torch::kFloat32);
     torch::Tensor action_tensor_new = torch::tensor(a);
-
-
-    torch::Tensor reward_tensor = torch::tensor(reward);
-    done_tensor = reward_tensor.to(torch::kFloat32);
 
     buffer.push(state_tensor, new_state_tensor, action_tensor_new, done_tensor, reward_tensor);
     state_tensor = new_state_tensor;
 
-    if (done){
-      std::cout << "Image sent, congratulations!" << std::endl;
+    if(episode%100 == 0){
+      csv_file << std::to_string(episode) << "," << std::to_string(reward) << ",";
+      csv_file << std::to_string(a) << "," << std::to_string(epsilon_by_frame(episode) * 1000);
+      csv_file << std::to_string(duration) << std::endl;
     }
 
     if (episode%1000==0){
         compute_td_loss();
-        std::cout<<episode_reward<<std::endl;
         loadstatedict(network, target_network);
-        episode = 0;
         episode_reward = 0.0;
     }
 

@@ -1,26 +1,57 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+import time
 
-# Read data from CSV file
-df = pd.read_csv(sys.argv[1])
+# Colors for each compression type
+compression_colors = {0: 'purple', 1: 'green', 2: 'cyan', 3: 'magenta'}
 
-# Plotting
-plt.figure(figsize=(10, 6))
+# Initialize the figure and set up subplots
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 12))  # Three vertical plots
 
-plt.plot(df['index'], df['average_transmission_duration'], label='Avg Transmission Duration', color='blue')
-plt.plot(df['index'], df['average_compression_duration'], label='Avg Compression Duration', color='orange')
-plt.plot(df['index'], df['average_both'], label='Average Total Duration', color='green')
-plt.plot(df['index'], df['compression_type'] * 100, label='Compression Type', color='red')
+def plot_live_data(df, metrics_df):
+    ax1.cla()
+    ax2.cla()
+    ax3.cla()
 
-# Adding titles and labels
-plt.title('Average Durations and Their Sum')
-plt.xlabel('Index')
-plt.ylabel('Duration (ms)')
-plt.xticks(df['index'])  # Set x-ticks to the index values
-plt.legend()
-plt.grid()
-plt.tight_layout()
+    labels = ["None", "Block Floating Point", "Run Length Encoding", "LZ77"]
+    for comp_type, color in compression_colors.items():
+        subset = df[df['compression_type'] == comp_type]
+        ax1.plot(subset['index'], subset['average_both'], label=labels[comp_type], color=color)
 
-# Show plot
-plt.show()
+    ax1.set_title('Average Durations and Their Sum')
+    ax1.set_xlabel('Index')
+    ax1.set_ylabel('Duration (ms)')
+    ax1.legend()
+    ax1.grid()
+
+    compression_counts = df['compression_type'].value_counts().sort_index()
+    colors = [compression_colors[i] for i in compression_counts.index]
+
+    ax2.pie(compression_counts, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140)
+    ax2.set_title('Compression Type Frequency')
+
+    for comp_type, color in compression_colors.items():
+        subset = metrics_df[metrics_df['action'] == comp_type]
+        ax3.plot(subset['episode'], subset['reward'], label=labels[comp_type], color=color)
+
+    ax3.plot(metrics_df['episode'], metrics_df['epsilon'], label='Epsilon', color='green')
+    ax3.plot(metrics_df['episode'], metrics_df['total_duration'], label='Total Duration', color='red')
+
+    ax3.set_title('Training Metrics')
+    ax3.set_xlabel('Episode')
+    ax3.set_ylabel('Values')
+    ax3.legend()
+    ax3.grid()
+
+    plt.tight_layout()
+    plt.pause(0.5)
+
+csv_file = sys.argv[1]
+training_file = sys.argv[2]
+while True:
+    df = pd.read_csv(csv_file)
+    metrics_df = pd.read_csv(training_file)
+    plot_live_data(df, metrics_df)
+    time.sleep(0.5)
+

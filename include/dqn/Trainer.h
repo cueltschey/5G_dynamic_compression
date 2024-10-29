@@ -4,6 +4,7 @@
 #pragma once
 
 #include <torch/torch.h>
+#include <fstream>
 
 #include "ExperienceReplay.h"
 #include "dqn.h"
@@ -32,8 +33,10 @@ class Trainer{
       compression_options::LZ77,
       compression_options::RLE
     };
+    std::string output_path = "training.csv";
 
     torch::Tensor state_tensor = torch::tensor({0.0,0.0,0.0}, torch::kFloat);
+    std::ofstream csv_file;
 
 
     public:
