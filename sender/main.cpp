@@ -14,19 +14,58 @@
 #include "srsran/adt/complex.h"
 #include "srsran/adt/bf16.h"
 
+class buffer_reader {
+public:
+    buffer_reader(const std::string& path, int count_ = 10, size_t max_buffer_size_ = 20240)
+        : count(count_), max_buffer_size(max_buffer_size_), file_path(path), file_stream(path, std::ios::binary) {
+        if (!file_stream.is_open()) {
+            throw std::runtime_error("Failed to open file: " + path);
+        }
+    }
 
-std::vector<uint8_t> read_image_from_stdin(size_t max_size = 20240) {
-  std::vector<uint8_t> buffer(max_size);
+    std::vector<uint8_t> read_buffer() {
+        if (count <= 0) {
+            return {};
+        }
 
-  std::cin.read(reinterpret_cast<char*>(buffer.data()), max_size);
+        std::vector<uint8_t> buffer;
+        buffer.resize(max_buffer_size);
 
-  buffer.resize(std::cin.gcount());
+        file_stream.read(reinterpret_cast<char*>(buffer.data()), max_buffer_size);
+        std::streamsize bytes_read = file_stream.gcount();
 
-  return buffer;
-}
+        if (bytes_read > 0) {
+            buffer.resize(bytes_read);
+        } else {
+            --count;
+            if (file_stream.eof()) {
+                file_stream.clear();
+                file_stream.seekg(0, std::ios::beg);
+            }
+            std::cout << "HERE" << std::endl;
+            return this->read_buffer();
+        }
+
+        return buffer;
+    }
+
+    ~buffer_reader() {
+        if (file_stream.is_open()) {
+            file_stream.close();
+        }
+    }
+
+private:
+    int count;                       // Number of times to read
+    size_t max_buffer_size;          // Maximum size of the buffer
+    std::string file_path;           // Path to the video file
+    std::ifstream file_stream;       // Input file stream
+};
+
 
 int main(int argc, char** argv) {
   std::string output_path = "./output.csv";
+  std::string input_path = "../rick.mp4";
   std::string algo_type = "state_machine";
 
   for (int i = 1; i < argc; i += 2) {
@@ -35,6 +74,8 @@ int main(int argc, char** argv) {
       output_path = argv[i + 1];
     } else if (arg == "--algorithm" || arg == "-a") {
       algo_type = argv[i + 1];
+    } else if (arg == "--input" || arg == "-i") {
+      input_path = argv[i + 1];
     } else {
       std::cerr << "Unknown argument: " << arg << std::endl;
       return -1;
@@ -43,6 +84,7 @@ int main(int argc, char** argv) {
 
   d_compression::channel wireless_channel("10.45.1.2", 5201);
   d_compression::controller controller(algo_type, 1);
+  buffer_reader reader(input_path);
 
   std::ofstream csv_file(output_path);
   csv_file << "index,compression_type,byte_length,compression_ratio,compression_duration,";
@@ -62,7 +104,7 @@ int main(int argc, char** argv) {
 
   while (true) {
       // Image byte buffer
-      std::vector<uint8_t> buffer = read_image_from_stdin();
+      std::vector<uint8_t> buffer = reader.read_buffer();
       if(buffer.empty()){
         wireless_channel.send(std::vector<uint8_t>{0});
         break;
@@ -126,13 +168,8 @@ int main(int argc, char** argv) {
       long avg_both = static_cast<long>(total_both.count() / frame_index);
       double comp_ratio = static_cast<double>(compressed_buffer_len / uncompressed_buffer_len);
 
-      std::cout << frame_index << " Sending with compression -> " << compression_name << std::endl;
-      std::cout << "\tFrame size: " << compressed_buffer_len << std::endl;
-      std::cout << "\tCompression ratio: " << (comp_ratio) * 100 << "%" << std::endl;
-      std::cout << "\tCompression duration: " << compression_time.count() << " microseconds" << std::endl;
-      std::cout << "\tTransmission duration: " << transmit_time.count() << " microseconds" << std::endl;
-      std::cout << "\tCompression average: " << avg_compression << " microseconds" << std::endl;
-      std::cout << "\tTotal Average: " << avg_both << " microseconds" << std::endl;
+      std::cout << frame_index << " " << compression_name << " -> " << 
+        comp_ratio * 100 << "% -> " << avg_both << std::endl;
 
       // Save data in CSV
       csv_file << frame_index << "," << static_cast<int>(controller.get_current_state()) << ",";

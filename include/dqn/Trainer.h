@@ -35,7 +35,7 @@ class Trainer{
     };
     std::string output_path = "training.csv";
 
-    torch::Tensor state_tensor = torch::tensor({0.0,0.0,0.0}, torch::kFloat);
+    torch::Tensor state_tensor = torch::tensor({0.0,0.0,0.0}, torch::kFloat).requires_grad_(false);
     std::ofstream csv_file;
 
 
