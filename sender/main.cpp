@@ -42,7 +42,6 @@ public:
                 file_stream.clear();
                 file_stream.seekg(0, std::ios::beg);
             }
-            std::cout << "HERE" << std::endl;
             return this->read_buffer();
         }
 

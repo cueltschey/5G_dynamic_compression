@@ -22,9 +22,9 @@ namespace d_compression {
         state_machine->update(frame_index, avg_compression, avg_transmission, current_compression, current_transmission);
       } else if (algorithm_type == "dqn") {
         trainer->train(
-            static_cast<int64_t>(shannon_entropy),
-            static_cast<int64_t>(packet_size),
-            static_cast<int64_t>(current_compression + current_transmission),
+            shannon_entropy,
+            packet_size,
+            static_cast<float>(current_compression + current_transmission),
             done
             );
       }

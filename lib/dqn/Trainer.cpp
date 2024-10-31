@@ -39,15 +39,20 @@ torch::Tensor Trainer::compute_td_loss() {
     torch::Tensor rewards_tensor = torch::cat(rewards, 0);
     torch::Tensor dones_tensor = torch::cat(dones, 0);
 
+
     // Forward pass through the networks
     torch::Tensor q_values = network.forward(states_tensor);
     torch::Tensor next_target_q_values = target_network.forward(new_states_tensor);
     torch::Tensor next_q_values = network.forward(new_states_tensor);
 
+    actions_tensor = actions_tensor.to(torch::kInt64);
+
     // Ensure q_value requires gradients
     torch::Tensor q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1);
     torch::Tensor maximum = std::get<1>(next_q_values.max(1));
     torch::Tensor next_q_value = next_target_q_values.gather(1, maximum.unsqueeze(1)).squeeze(1);
+
+    dones_tensor = dones_tensor.to(torch::kInt64);
 
     // Compute expected Q value and ensure it requires gradients
     torch::Tensor expected_q_value = rewards_tensor + gamma * next_q_value * (1 - dones_tensor);
@@ -55,12 +60,8 @@ torch::Tensor Trainer::compute_td_loss() {
     // Compute loss
     torch::Tensor loss = torch::mse_loss(q_value, expected_q_value);
 
-    // Debugging outputs
-    std::cout << "q_value requires grad: " << q_value.requires_grad() << std::endl;
-    std::cout << "expected_q_value requires grad: " << expected_q_value.requires_grad() << std::endl;
-
     dqn_optimizer.zero_grad(); // Clear previous gradients
-
+    loss.set_requires_grad(true);
     loss.backward(); // Backpropagation
     dqn_optimizer.step(); // Update parameters
 
@@ -97,7 +98,7 @@ void Trainer::train(float entropy, float packet_size, float duration, bool done)
     episode_reward += reward;
 
     // Create new state tensor with requires_grad = true
-    torch::Tensor new_state_tensor = torch::tensor({entropy, packet_size, duration}, torch::kFloat).requires_grad_(true);
+    torch::Tensor new_state_tensor = torch::tensor({entropy, packet_size, duration});
 
     episode++;
     double epsilon = epsilon_by_frame(episode);
@@ -112,12 +113,13 @@ void Trainer::train(float entropy, float packet_size, float duration, bool done)
     }
 
     // Prepare reward and done tensors
-    torch::Tensor reward_tensor = torch::tensor(reward).to(torch::kFloat32);
-    torch::Tensor done_tensor = done ? torch::ones({1}, torch::kFloat32) : torch::zeros({1}, torch::kFloat32);
+    torch::Tensor reward_tensor = torch::tensor(reward);
+    torch::Tensor done_tensor = torch::tensor(done);
     torch::Tensor action_tensor_new = torch::tensor(a);
 
     // Push data to the experience replay buffer
     buffer.push(state_tensor, new_state_tensor, action_tensor_new, done_tensor, reward_tensor);
+
     state_tensor = new_state_tensor;
 
     // Log data every 100 episodes
