@@ -93,7 +93,7 @@ void Trainer::loadstatedict(torch::nn::Module& model,
 }
 
 void Trainer::train(float entropy, float packet_size, float duration, bool done) {
-    float reward = duration - old_duration;
+    float reward = old_duration - duration;
     old_duration = duration;
     episode_reward += reward;
 
@@ -125,8 +125,7 @@ void Trainer::train(float entropy, float packet_size, float duration, bool done)
     // Log data every 100 episodes
     if (episode % 100 == 0) {
         csv_file << std::to_string(episode) << "," << std::to_string(reward) << ",";
-        csv_file << std::to_string(a) << "," << std::to_string(epsilon_by_frame(episode) * 1000);
-        csv_file << std::to_string(duration) << std::endl;
+        csv_file << std::to_string(a) << "," << std::to_string(epsilon_by_frame(episode) * 1000) << std::endl;
     }
 
     // Compute TD loss and update every 1000 episodes

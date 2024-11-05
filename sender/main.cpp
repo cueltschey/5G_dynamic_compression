@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
   std::string output_path = "./output.csv";
   std::string input_path = "../rick.mp4";
   std::string algo_type = "state_machine";
+  std::string tx_count = "10";
 
   for (int i = 1; i < argc; i += 2) {
     std::string arg = argv[i];
@@ -75,6 +76,8 @@ int main(int argc, char** argv) {
       algo_type = argv[i + 1];
     } else if (arg == "--input" || arg == "-i") {
       input_path = argv[i + 1];
+    } else if (arg == "--tx_count" || arg == "-c") {
+      tx_count = argv[i + 1];
     } else {
       std::cerr << "Unknown argument: " << arg << std::endl;
       return -1;
@@ -83,7 +86,7 @@ int main(int argc, char** argv) {
 
   d_compression::channel wireless_channel("10.45.1.2", 5201);
   d_compression::controller controller(algo_type, 1);
-  buffer_reader reader(input_path);
+  buffer_reader reader(input_path, std::stoi(tx_count));
 
   std::ofstream csv_file(output_path);
   csv_file << "index,compression_type,byte_length,compression_ratio,compression_duration,";
