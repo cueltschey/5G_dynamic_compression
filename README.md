@@ -35,30 +35,3 @@ cd build
 cmake ..
 make -j$(nproc)
 ```
-
-# Notes
-
-option a: modify phy level code, implement faster compressions
-- time sensitive
-- limited applicable algorithms
-- error prone
-- difficult
-
-- makes a better paper
-- more compelling
-- will learn more about wireless
-
-option b: only compress UP data
-- not good enough for a paper
-
-- easy
-- flexible
-
-steps:
-- fix BFP compression
-- fix IQ encoding
-- state machine vs. DQN vs. greedy algorithm
-- store algo decisions
-- one more compression type
-- different data types
-- run with ZMQ and UHD
